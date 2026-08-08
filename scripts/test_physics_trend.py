@@ -15,3 +15,9 @@ def test_physics_losses():
     assert M.physics_loss(decreasing, "smooth").item() == 0
     assert M.physics_loss(curved, "smooth").item() > 0
     assert M.physics_loss(curved, "none").item() == 0
+
+
+def test_stable_seed_is_order_independent():
+    assert M.stable_seed(42, "B0007", "Trend") == M.stable_seed(42, "B0007", "Trend")
+    assert M.stable_seed(42, "B0007", "Trend") != M.stable_seed(42, "B0018", "Trend")
+    assert M.stable_seed(42, "B0018", "Trend") != M.stable_seed(42, "B0018", "Residual")

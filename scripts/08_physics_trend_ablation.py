@@ -27,6 +27,18 @@ ts = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(ts)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 HF_COLS = ["HF1", "HF2", "HF3"]
+BASE_SEED = ts.SEED
+
+
+def reset_seed(seed):
+    random.seed(seed); np.random.seed(seed); torch.manual_seed(seed)
+
+
+def stable_seed(base, battery, component):
+    """Independent of battery execution order and ablation list length."""
+    battery_offset = {"B0007": 7000, "B0018": 18000}[battery]
+    component_offset = {"Seasonal": 100, "Residual": 200, "Trend": 300}[component]
+    return int(base + battery_offset + component_offset)
 
 
 def physics_loss(pred, mode):
@@ -99,7 +111,7 @@ def metric_row(battery, mode, lam, true, pred, trend_pred):
             "TrendViolationRate": float(np.mean(delta > 0)) if len(delta) else 0.0}
 
 
-def run_battery(battery, modes, lam, epochs, patience, out_dir):
+def run_battery(battery, modes, lam, epochs, patience, out_dir, seed):
     raw = pd.read_csv(ROOT / "data" / "hf_csv" / f"{battery}_hf.csv")
     raw = raw[HF_COLS + ["SOH"]].apply(pd.to_numeric, errors="coerce").dropna().reset_index(drop=True)
     aug_path = ROOT / "output" / f"{battery}_aug_train_hf.csv"
@@ -121,9 +133,8 @@ def run_battery(battery, modes, lam, epochs, patience, out_dir):
     trained = {}
     component_modes = [("Seasonal", "none"), ("Residual", "none")] + [("Trend", m) for m in modes]
     for name, mode in component_modes:
-        # Every Trend ablation starts from the same weights and trajectory order.
-        if name == "Trend":
-            random.seed(ts.SEED); np.random.seed(ts.SEED); torch.manual_seed(ts.SEED)
+        # Every component is independent of execution order; all Trend modes share initialization/order.
+        reset_seed(stable_seed(seed, battery, name))
         values = comps[name]; mean, std = float(values[:train_end].mean()), max(float(values[:train_end].std()), 1e-8)
         state = ((values - mean) / std).reshape(-1, 1); lag = np.vstack([state[:1], state[:-1]])
         raw_x = np.concatenate([norm(raw), lag], axis=1).astype(np.float32)
@@ -159,19 +170,20 @@ def main():
     p.add_argument("--modes", default="none,monotonic,smooth,both")
     p.add_argument("--lambda-phy", type=float, default=.01, choices=[0, .001, .01, .1])
     p.add_argument("--epochs", type=int, default=250); p.add_argument("--patience", type=int, default=30)
+    p.add_argument("--seed", type=int, default=42)
     p.add_argument("--output-dir", default=str(ROOT / "output" / "physics_trend"))
     a = p.parse_args(); modes = a.modes.split(",")
     if not set(modes) <= {"none", "monotonic", "smooth", "both"}: raise ValueError("非法physics_mode")
-    random.seed(ts.SEED); np.random.seed(ts.SEED); torch.manual_seed(ts.SEED)
+    reset_seed(a.seed)
     out = Path(a.output_dir); out.mkdir(parents=True, exist_ok=True)
     rows, frames, protocols = [], [], []
     for battery in a.batteries.split(","):
-        r, f, protocol = run_battery(battery.strip(), modes, a.lambda_phy, a.epochs, a.patience, out)
+        r, f, protocol = run_battery(battery.strip(), modes, a.lambda_phy, a.epochs, a.patience, out, a.seed)
         rows += r; frames += f; protocols.append(protocol)
     metrics = pd.DataFrame(rows); predictions = pd.concat(frames, ignore_index=True)
     metrics.to_csv(out / "physics_ablation_metrics.csv", index=False, encoding="utf-8-sig")
     predictions.to_csv(out / "physics_ablation_predictions.csv", index=False, encoding="utf-8-sig")
-    config = {"physics_modes": modes, "lambda_phy": a.lambda_phy, "epochs": a.epochs,
+    config = {"physics_modes": modes, "lambda_phy": a.lambda_phy, "epochs": a.epochs, "seed": a.seed,
               "timesnet": "original", "transfer_pretrain": False, "oselm": False,
               "causal_multirate": False, "scf_gan_algorithm_changed": False,
               "physics_applied_to": "STL Trend branch only", "protocols": protocols}

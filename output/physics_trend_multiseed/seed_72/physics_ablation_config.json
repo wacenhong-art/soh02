@@ -1,0 +1,35 @@
+{
+  "physics_modes": [
+    "none",
+    "monotonic",
+    "smooth",
+    "both"
+  ],
+  "lambda_phy": 0.01,
+  "epochs": 120,
+  "seed": 72,
+  "timesnet": "original",
+  "transfer_pretrain": false,
+  "oselm": false,
+  "causal_multirate": false,
+  "scf_gan_algorithm_changed": false,
+  "physics_applied_to": "STL Trend branch only",
+  "protocols": [
+    {
+      "BatteryID": "B0007",
+      "Rows": 168,
+      "TrainEnd": 100,
+      "ValidationEnd": 134,
+      "TestRows": 34,
+      "Protocol": "target-first-60%-labeled-adaptation; next-20%-validation; last-20%-strict-test"
+    },
+    {
+      "BatteryID": "B0018",
+      "Rows": 128,
+      "TrainEnd": 76,
+      "ValidationEnd": 102,
+      "TestRows": 26,
+      "Protocol": "target-first-60%-labeled-adaptation; next-20%-validation; last-20%-strict-test"
+    }
+  ]
+}
