@@ -1,0 +1,3 @@
+BatteryID PhysicsMode  LambdaPhy     RMSE     MAE     MAPE         R2  TrendViolationRate
+    B0007        both        0.0 4.235864 3.80895 5.324244 -14.319840                0.00
+    B0018        both        0.0 3.090983 2.98729 4.330931  -2.819084                0.44

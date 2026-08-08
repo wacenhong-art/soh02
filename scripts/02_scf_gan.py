@@ -13,6 +13,7 @@ ROOT_PATH = "./"
 CSV_PATH = os.path.join(ROOT_PATH, "data", "hf_csv")
 MODEL_SAVE = os.path.join(ROOT_PATH, "model")
 OUTPUT_PATH = os.path.join(ROOT_PATH, "output")
+TARGET_BATTERY = os.getenv("TARGET_BATTERY", "B0018").strip()
 os.makedirs(MODEL_SAVE, exist_ok=True)
 os.makedirs(OUTPUT_PATH, exist_ok=True)
 
@@ -185,7 +186,7 @@ def train_scf_gan():
     torch.save(dis.state_dict(), os.path.join(MODEL_SAVE, "scf_discriminator.pth"))
     print("==== SCF-GAN训练完成，权重已保存至model文件夹 ====")
 
-# 为B0018真实训练段生成5套HF特征；SOH标签始终来自真实目标电池。
+# 为目标电池真实训练段生成5套HF特征；SOH标签始终来自真实目标电池。
 def generate_aug_data():
     gen = Generator().to(device)
     gen.load_state_dict(torch.load(os.path.join(MODEL_SAVE, "scf_generator.pth")))
@@ -194,7 +195,9 @@ def generate_aug_data():
         scaler = json.load(f)
     feature_min = np.asarray(scaler["min"], dtype=np.float32)
     feature_max = np.asarray(scaler["max"], dtype=np.float32)
-    df_raw = pd.read_csv(os.path.join(CSV_PATH, "B0018_hf.csv"))
+    if TARGET_BATTERY not in {"B0007", "B0018"}:
+        raise ValueError("TARGET_BATTERY 仅支持 B0007 或 B0018")
+    df_raw = pd.read_csv(os.path.join(CSV_PATH, f"{TARGET_BATTERY}_hf.csv"))
     # 清洗数据
     for col in ["HF1","HF2","HF3","SOH"]:
         df_raw[col] = df_raw[col].apply(clean_num)
@@ -219,7 +222,7 @@ def generate_aug_data():
                 # The label is the real target SOH at this training cycle.
                 rows.append([dataset_id, i, *fake_hf[i], train_df.loc[i, "SOH"]])
     aug_df = pd.DataFrame(rows, columns=["DatasetID", "Cycle", "HF1", "HF2", "HF3", "SOH"])
-    save_path = os.path.join(OUTPUT_PATH, "B0018_aug_train_hf.csv")
+    save_path = os.path.join(OUTPUT_PATH, f"{TARGET_BATTERY}_aug_train_hf.csv")
     aug_df.to_csv(save_path, index=False, encoding="utf-8-sig")
     print(f"训练集增强完成：真实{train_len}条 + 5套合成HF，共{len(aug_df)}条；验证/测试未增强")
 
