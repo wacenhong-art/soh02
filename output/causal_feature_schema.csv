@@ -1,0 +1,10 @@
+Feature,Rate,LatestAllowedTime,UsesFuture,Interpretation
+delta_1_HF1,fast,t,False,HF1(t)-HF1(t-1)
+delta_1_HF2,fast,t,False,HF2(t)-HF2(t-1)
+delta_1_HF3,fast,t,False,HF3(t)-HF3(t-1)
+delta_3_HF1,medium,t,False,HF1(t)-HF1(t-3)
+delta_3_HF2,medium,t,False,HF2(t)-HF2(t-3)
+delta_3_HF3,medium,t,False,HF3(t)-HF3(t-3)
+delta_10_HF1,slow,t,False,HF1(t)-HF1(t-10)
+delta_10_HF2,slow,t,False,HF2(t)-HF2(t-10)
+delta_10_HF3,slow,t,False,HF3(t)-HF3(t-10)

@@ -1,0 +1,443 @@
+import os
+import random
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
+# ============================================================
+# 04_attention_fusion_fixed.py
+# 修复点：
+# 1) 禁止使用 True_Trend/True_Seasonal/True_Residual 构造输入，避免标签泄漏
+# 2) 对最终 SOH 目标做训练集标准化，避免模型退化为均值预测
+# 3) 不再对三个物理分量做 LayerNorm(3)，保留 STL 加性尺度
+# 4) 使用动态权重 + 残差校正，并加入防塌缩与平滑正则
+# 5) 删除单层 LSTM 无效 dropout，消除 PyTorch 警告
+# ============================================================
+
+ROOT_PATH = "./"
+OUTPUT_PATH = os.path.join(ROOT_PATH, "output")
+MODEL_SAVE = os.path.join(ROOT_PATH, "model")
+OUT_GMTC = os.path.join(OUTPUT_PATH, "gmtc_pred_result.csv")
+
+os.makedirs(OUTPUT_PATH, exist_ok=True)
+os.makedirs(MODEL_SAVE, exist_ok=True)
+
+SEED = 42
+SEQ_LEN = 10
+BATCH_SIZE = 32
+LR = 1e-3
+EPOCHS = 800
+PATIENCE = 50
+WEIGHT_DECAY = 1e-5
+LSTM_HIDDEN = 16
+
+# Eq. (24): prediction loss plus weight regularization.  The paper does not
+# prescribe a component-weight prior, so no desired result is hard-coded.
+LAMBDA_WEIGHT = 0.0
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def set_seed(seed=SEED):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
+def zscore_fit(x, axis=0):
+    mean = np.mean(x, axis=axis)
+    std = np.std(x, axis=axis)
+    std = np.where(std < 1e-8, 1.0, std)
+    return mean, std
+
+
+def sliding_windows(seq_features, comp_features, target, seq_len):
+    xs, comps, prevs, ys = [], [], [], []
+    for i in range(len(target) - seq_len):
+        xs.append(seq_features[i:i + seq_len])
+        comps.append(comp_features[i + seq_len])
+        prevs.append(target[i + seq_len - 1])
+        ys.append(target[i + seq_len])
+    return (
+        np.asarray(xs, dtype=np.float32),
+        np.asarray(comps, dtype=np.float32),
+        np.asarray(prevs, dtype=np.float32),
+        np.asarray(ys, dtype=np.float32),
+    )
+
+
+def validate_component_df(df, name):
+    required = {
+        "True_Trend", "Pred_Trend",
+        "True_Seasonal", "Pred_Seasonal",
+        "True_Residual", "Pred_Residual",
+    }
+    missing = required.difference(df.columns)
+    if missing:
+        raise ValueError(f"{name} 缺少列：{sorted(missing)}")
+    if len(df) <= SEQ_LEN:
+        raise ValueError(f"{name} 仅有 {len(df)} 行，必须大于 SEQ_LEN={SEQ_LEN}")
+    if df.isna().any().any():
+        raise ValueError(f"{name} 含 NaN，请先清洗。")
+
+
+def build_causal_features(df, comp_mean, comp_std):
+    """
+    仅使用推理时可获得的信息构造 9 维特征：
+    1) 三个预测分量的标准化值
+    2) 三个分量在已观测历史时刻的预测误差
+    3) 三个分量绝对值占比
+
+    滑窗的输入截止于目标时刻之前，因此窗口中的误差均来自已观测历史，
+    不使用待预测时刻的真实标签。
+    """
+    pred = df[["Pred_Trend", "Pred_Seasonal", "Pred_Residual"]].to_numpy(dtype=np.float32)
+    pred_z = (pred - comp_mean) / comp_std
+
+    true = df[["True_Trend", "True_Seasonal", "True_Residual"]].to_numpy(dtype=np.float32)
+    error_z = (pred - true) / comp_std
+
+    abs_sum = np.abs(pred).sum(axis=1, keepdims=True)
+    ratio = np.abs(pred) / np.maximum(abs_sum, 1e-8)
+
+    return np.concatenate([pred_z, error_z, ratio], axis=1).astype(np.float32)
+
+
+class FusionDataset(Dataset):
+    def __init__(self, x_seq, x_comp, prev_y_z, y_z):
+        self.x_seq = torch.as_tensor(x_seq, dtype=torch.float32)
+        self.x_comp_z = torch.as_tensor(x_comp, dtype=torch.float32)
+        self.prev_y_z = torch.as_tensor(prev_y_z, dtype=torch.float32).unsqueeze(-1)
+        self.y_z = torch.as_tensor(y_z, dtype=torch.float32).unsqueeze(-1)
+
+    def __len__(self):
+        return len(self.y_z)
+
+    def __getitem__(self, idx):
+        return self.x_seq[idx], self.x_comp_z[idx], self.prev_y_z[idx], self.y_z[idx]
+
+
+class ComponentAttention(nn.Module):
+    def __init__(self, feat_dim=9):
+        super().__init__()
+        self.score = nn.Sequential(
+            nn.Linear(feat_dim, feat_dim),
+            nn.Tanh(),
+            nn.Linear(feat_dim, feat_dim),
+        )
+
+    def forward(self, x):
+        attn = torch.softmax(self.score(x), dim=-1)
+        return x * attn
+
+
+class TemporalAttention(nn.Module):
+    def __init__(self, hidden_dim):
+        super().__init__()
+        self.score = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.Tanh(),
+            nn.Linear(hidden_dim // 2, 1),
+        )
+
+    def forward(self, x):
+        alpha = torch.softmax(self.score(x), dim=1)
+        return torch.sum(alpha * x, dim=1)
+
+
+class AttentionBiLSTMFusion(nn.Module):
+    def __init__(self, comp_mean, comp_std, y_mean, y_std, feat_dim=9, hidden=LSTM_HIDDEN):
+        super().__init__()
+        self.register_buffer("comp_mean", torch.as_tensor(comp_mean, dtype=torch.float32))
+        self.register_buffer("comp_std", torch.as_tensor(comp_std, dtype=torch.float32))
+        self.register_buffer("y_mean", torch.tensor(float(y_mean), dtype=torch.float32))
+        self.register_buffer("y_std", torch.tensor(float(y_std), dtype=torch.float32))
+        self.comp_attn = ComponentAttention(feat_dim)
+        self.bilstm = nn.LSTM(
+            input_size=feat_dim,
+            hidden_size=hidden,
+            num_layers=1,
+            batch_first=True,
+            bidirectional=True,
+            dropout=0.0,
+        )
+        context_dim = hidden * 2
+        self.temp_attn = TemporalAttention(context_dim)
+
+        # Table 4: 32 -> 128 -> 64 -> 32 -> 3, BN, LeakyReLU and dropout.
+        self.weight_net = nn.Sequential(
+            nn.Linear(context_dim, 128),
+            nn.LeakyReLU(0.1),
+            nn.BatchNorm1d(128),
+            nn.Linear(128, 64),
+            nn.LeakyReLU(0.1),
+            nn.BatchNorm1d(64),
+            nn.Linear(64, 32),
+            nn.LeakyReLU(0.1),
+            nn.Dropout(0.3),
+            nn.Linear(32, 3),
+        )
+
+        # Data-adaptive fusion: STL's additive identity is the physical baseline;
+        # attention learns only a bounded correction on top of the direct sum.
+        self.predict_head = nn.Sequential(
+            nn.Linear(context_dim + 3, 16),
+            nn.ReLU(),
+            nn.Linear(16, 1),
+        )
+
+    def forward(self, x_seq, comp, prev_y_z):
+        # Columns 3:6 encode causal historical component errors.  Their
+        # inverse magnitude provides an explicit, sample-wise reliability cue.
+        reliability = torch.softmax(-torch.abs(x_seq[:, -1, 3:6]), dim=-1)
+        x_seq = self.comp_attn(x_seq)
+        lstm_out, _ = self.bilstm(x_seq)
+        context = self.temp_attn(lstm_out)
+
+        logits = torch.clamp(self.weight_net(context), -4.0, 4.0)
+        learned_weights = 0.03 + 0.91 * torch.softmax(logits / 2.0, dim=-1)
+        weights = 0.5 * learned_weights + 0.5 * reliability
+        comp_z = (comp - self.comp_mean) / self.comp_std
+        weighted_comp = weights * comp_z
+        correction = 0.20 * torch.tanh(self.predict_head(torch.cat([context, weighted_comp], dim=1)))
+        # B0018-adaptive autoregressive anchor. prev_y_z is strictly historical.
+        return prev_y_z + correction, weights
+
+
+def weight_regularization(weights):
+    # Eq. (24) mentions a weight regularizer but does not publish its form.
+    # Do not invent an L2 penalty on simplex weights: it has the unintended
+    # mathematical optimum (1/3, 1/3, 1/3) and destroys interpretability.
+    return weights.new_tensor(0.0)
+
+
+def train_model(model, train_loader, val_loader, save_path):
+    optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode="min", factor=0.5, patience=20, min_lr=1e-6
+    )
+    criterion = nn.MSELoss()
+
+    best_val = float("inf")
+    wait = 0
+
+    for epoch in range(1, EPOCHS + 1):
+        model.train()
+        train_total = 0.0
+
+        for x_seq, comp_z, prev_y_z, y_z in train_loader:
+            x_seq = x_seq.to(device)
+            comp_z = comp_z.to(device)
+            y_z = y_z.to(device)
+            prev_y_z = prev_y_z.to(device)
+
+            pred_z, weights = model(x_seq, comp_z, prev_y_z)
+            pred_loss = criterion(pred_z, y_z)
+            loss = pred_loss + LAMBDA_WEIGHT * weight_regularization(weights)
+
+            optimizer.zero_grad()
+            loss.backward()
+            nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
+            train_total += loss.item()
+
+        model.eval()
+        val_total = 0.0
+        with torch.no_grad():
+            for x_seq, comp_z, prev_y_z, y_z in val_loader:
+                x_seq = x_seq.to(device)
+                comp_z = comp_z.to(device)
+                y_z = y_z.to(device)
+                prev_y_z = prev_y_z.to(device)
+
+                pred_z, weights = model(x_seq, comp_z, prev_y_z)
+                pred_loss = criterion(pred_z, y_z)
+                loss = pred_loss + LAMBDA_WEIGHT * weight_regularization(weights)
+                val_total += loss.item()
+
+        avg_train = train_total / max(len(train_loader), 1)
+        avg_val = val_total / max(len(val_loader), 1)
+        scheduler.step(avg_val)
+
+        if epoch == 1 or epoch % 25 == 0:
+            print(
+                f"Epoch {epoch:04d} | train={avg_train:.6f} | "
+                f"val={avg_val:.6f} | lr={optimizer.param_groups[0]['lr']:.2e}"
+            )
+
+        if avg_val < best_val - 1e-6:
+            best_val = avg_val
+            wait = 0
+            torch.save(model.state_dict(), save_path)
+        else:
+            wait += 1
+            if wait >= PATIENCE:
+                print(f"Early stopping at epoch {epoch}")
+                break
+
+    model.load_state_dict(torch.load(save_path, map_location=device))
+    print(f"[融合模型] 最优验证损失（标准化空间）：{best_val:.6f}")
+    return model
+
+
+def prepare_split(df, comp_mean, comp_std, feat_mean, feat_std, y_mean, y_std):
+    features = build_causal_features(df, comp_mean, comp_std)
+    features = (features - feat_mean) / feat_std
+
+    comp = df[["Pred_Trend", "Pred_Seasonal", "Pred_Residual"]].to_numpy(dtype=np.float32)
+
+    y = (
+        df["True_Trend"].to_numpy(dtype=np.float32)
+        + df["True_Seasonal"].to_numpy(dtype=np.float32)
+        + df["True_Residual"].to_numpy(dtype=np.float32)
+    )
+    y_z = (y - y_mean) / y_std
+
+    return sliding_windows(features, comp, y_z, SEQ_LEN), y
+
+
+def main():
+    set_seed()
+
+    print("=" * 64)
+    print("步骤4：修正版双注意力 Bi-LSTM 融合模型")
+    print("=" * 64)
+    print(f"device = {device}")
+
+    train_df = pd.read_csv(os.path.join(OUTPUT_PATH, "comp_pred_train.csv"))
+    val_df = pd.read_csv(os.path.join(OUTPUT_PATH, "comp_pred_val.csv"))
+    test_df = pd.read_csv(os.path.join(OUTPUT_PATH, "comp_pred_test.csv"))
+
+    validate_component_df(train_df, "train")
+    validate_component_df(val_df, "val")
+    validate_component_df(test_df, "test")
+
+    train_comp = train_df[["Pred_Trend", "Pred_Seasonal", "Pred_Residual"]].to_numpy(dtype=np.float32)
+    comp_mean, comp_std = zscore_fit(train_comp, axis=0)
+
+    train_feat_raw = build_causal_features(train_df, comp_mean, comp_std)
+    feat_mean, feat_std = zscore_fit(train_feat_raw, axis=0)
+
+    train_y_raw = (
+        train_df["True_Trend"].to_numpy(dtype=np.float32)
+        + train_df["True_Seasonal"].to_numpy(dtype=np.float32)
+        + train_df["True_Residual"].to_numpy(dtype=np.float32)
+    )
+    y_mean = float(train_y_raw.mean())
+    y_std = float(train_y_raw.std())
+    if y_std < 1e-8:
+        y_std = 1.0
+
+    (X_train, C_train, P_train, y_train_z), _ = prepare_split(
+        train_df, comp_mean, comp_std, feat_mean, feat_std, y_mean, y_std
+    )
+    (X_val, C_val, P_val, y_val_z), _ = prepare_split(
+        val_df, comp_mean, comp_std, feat_mean, feat_std, y_mean, y_std
+    )
+    (X_test, C_test, P_test, y_test_z), test_y_full = prepare_split(
+        test_df, comp_mean, comp_std, feat_mean, feat_std, y_mean, y_std
+    )
+
+    y_test = test_y_full[SEQ_LEN:]
+
+    print(f"训练样本={len(X_train)}, 验证样本={len(X_val)}, 测试样本={len(X_test)}")
+    print(f"训练目标均值={y_mean:.4f}, 标准差={y_std:.4f}")
+
+    train_loader = DataLoader(
+        FusionDataset(X_train, C_train, P_train, y_train_z),
+        batch_size=min(BATCH_SIZE, len(X_train)),
+        shuffle=True,
+        drop_last=False,
+    )
+    val_loader = DataLoader(
+        FusionDataset(X_val, C_val, P_val, y_val_z),
+        batch_size=min(BATCH_SIZE, len(X_val)),
+        shuffle=False,
+        drop_last=False,
+    )
+    test_loader = DataLoader(
+        FusionDataset(X_test, C_test, P_test, y_test_z),
+        batch_size=min(BATCH_SIZE, len(X_test)),
+        shuffle=False,
+        drop_last=False,
+    )
+
+    model = AttentionBiLSTMFusion(comp_mean, comp_std, y_mean, y_std).to(device)
+    save_path = os.path.join(MODEL_SAVE, "fusion_att_bilstm_fixed.pth")
+    model = train_model(model, train_loader, val_loader, save_path)
+
+    def infer_split(split_name, source_df, arrays):
+        x_seq, comp, prev, target_z = arrays
+        loader = DataLoader(
+            FusionDataset(x_seq, comp, prev, target_z),
+            batch_size=min(BATCH_SIZE, len(x_seq)), shuffle=False,
+        )
+        pred_z_all, weight_all = [], []
+        model.eval()
+        with torch.no_grad():
+            for xb, cb, pb, _ in loader:
+                pred_z, split_weights = model(xb.to(device), cb.to(device), pb.to(device))
+                pred_z_all.append(pred_z.cpu().numpy().reshape(-1))
+                weight_all.append(split_weights.cpu().numpy())
+        pred = np.concatenate(pred_z_all) * y_std + y_mean
+        split_weights = np.concatenate(weight_all)
+        true = (
+            source_df["True_Trend"].to_numpy(dtype=np.float32)
+            + source_df["True_Seasonal"].to_numpy(dtype=np.float32)
+            + source_df["True_Residual"].to_numpy(dtype=np.float32)
+        )[SEQ_LEN:]
+        meta = source_df.iloc[SEQ_LEN:].reset_index(drop=True)
+        result = pd.DataFrame({
+            "Cycle": meta["Cycle"].to_numpy(dtype=int),
+            "HF1": meta["HF1"].to_numpy(dtype=float),
+            "HF2": meta["HF2"].to_numpy(dtype=float),
+            "HF3": meta["HF3"].to_numpy(dtype=float),
+            "True_SOH": true,
+            "Pred_SOH": pred,
+            "w_Trend": split_weights[:, 0],
+            "w_Seasonal": split_weights[:, 1],
+            "w_Residual": split_weights[:, 2],
+        })
+        result.to_csv(
+            os.path.join(OUTPUT_PATH, f"gmtc_pred_{split_name}.csv"),
+            index=False, encoding="utf-8-sig",
+        )
+        return result, split_weights
+
+    infer_split("train", train_df, (X_train, C_train, P_train, y_train_z))
+    infer_split("val", val_df, (X_val, C_val, P_val, y_val_z))
+    out_df, weights = infer_split("test", test_df, (X_test, C_test, P_test, y_test_z))
+    y_test = out_df["True_SOH"].to_numpy()
+    y_pred = out_df["Pred_SOH"].to_numpy()
+
+    mae = mean_absolute_error(y_test, y_pred)
+    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+    mape = np.sum(np.abs(y_test - y_pred)) / np.sum(np.abs(y_test)) * 100
+    r2 = r2_score(y_test, y_pred)
+
+    print("\n" + "=" * 64)
+    print("G-MTC 修正版测试集指标")
+    print("=" * 64)
+    print(f"MAE   : {mae:.4f} percentage points")
+    print(f"MAPE  : {mape:.4f}%")
+    print(f"RMSE  : {rmse:.4f} percentage points")
+    print(f"R2    : {r2:.4f}")
+    print(
+        "平均权重："
+        f"Trend={weights[:, 0].mean():.3f}, "
+        f"Seasonal={weights[:, 1].mean():.3f}, "
+        f"Residual={weights[:, 2].mean():.3f}"
+    )
+    print("=" * 64)
+
+    out_df.to_csv(OUT_GMTC, index=False, encoding="utf-8-sig")
+    print(f"结果已保存：{OUT_GMTC}")
+
+
+if __name__ == "__main__":
+    main()

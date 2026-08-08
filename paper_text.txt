@@ -1,0 +1,1491 @@
+--- PAGE 1 ---
+Energy 342 (2026) 139463
+Contents lists available at ScienceDirect
+Energy
+journal homepage: www.elsevier.com/locate/energy
+Data-augmented SOH estimation for lithium-ion batteries under
+small-sample conditions: A hybrid STL-transformer-TimesNet approach
+Hanhua Yanga, Simin Penga,* , Chong Chena, Aihua Tangb , Quanqing Yuc,
+Jianwen Zhangd , Rui Lid
+aSchool of Electrical Engineering, Yancheng Institute of Technology, Yancheng, 224051, China
+bKey Laboratory of Advanced Manufacturing Technology for Automobile Parts, Ministry of Education, Chongqing University of Technology, Chongqing, 400054, China
+cSchool of Automotive Engineering, Harbin Institute of Technology, Weihai, 264209, China
+dSchool of Electrical Engineering, Shanghai Jiao Tong University, Shanghai, 200240, China
+A R T I C L E I N F O A B S T R A C T
+Keywords: Accurate assessment of state of health (SOH) is essential for optimizing the safety and lifespan of lithium-ion
+Lithium-ion battery batteries. However, existing data-driven models often fail to adequately capture battery degradation patterns
+State of health under small-sample conditions and exhibit limited capability in modeling complex temporal dependencies. To
+Small sample
+overcome these limitations, this paper proposes a novel framework that deeply integrates few-sample generative
+Improved generative adversarial network
+data augmentation with interpretable multi-modal temporal decomposition for accurate SOH estimation. First, to
+Seasonal and trend decomposition
+mitigate the scarcity of training data, an improved generative adversarial network (GAN) is designed to
+reconstruct the distribution of battery degradation features, thereby expanding the sample space and effectively
+characterizing battery aging behavior. Second, a collaborative framework for SOH estimation is introduced based
+on Seasonal-Trend decomposition using Loess (STL). In this framework, the trend and seasonal components are
+modeled separately using TimesNet, while the residual component is processed with iTransformer. Finally, a
+generative-augmented multi-modal temporal collaborative framework is proposed, which deeply integrates
+small-sample data augmentation with interpretable temporal decomposition to estimate battery SOH under data-
+limited conditions. Experimental results demonstrate that the estimated SOH using the developed method show
+high estimation accuracy, with root mean square error all within 1 %, substantially outperforming existing data-
+driven approaches such as LSTM, CNN, and Transformer.
+1. Introduction predictive maintenance scheduling, and lifecycle resource utilization
+optimization [6].
+Lithium-ion batteries (LIBs) are widely used to power modern elec- Current SOH estimation methods can be categorized into three
+tric vehicles and portable devices due to their high energy density, long classes: direct measurement methods [7], model-based methods [8], and
+cycle life, and low self-discharge rate [1]. Nevertheless, the inherent data-driven methods [9]. Direct measurement methods for SOH esti-
+electrochemical degradation mechanisms of battery, such as solid elec- mation, such as coulomb counting method and ampere-hour (Ah) inte-
+trolyte interphase (SEI) growth [2] and lithium plating [3], progres- gration method, can track capacity degradation through
+sively diminish both the charge retention capacity and the maximum charge/discharge accumulation. Electrochemical impedance spectros-
+power output. This degradation elevates battery operational hazards, copy (EIS) method is used to estimate SOH estimation by quantifying
+including thermal runaway risk [4]. Quantifying deterioration via state internal resistance growth via impedance spectroscopy analysis under
+of health (SOH)—expressed as residual capacity relative to nominal controlled laboratory conditions [10]. Their operational protocols
+capacity—is fundamental function of battery management systems necessitate both constant temperature conditions and high frequency
+(BMS) [5]. Accurate SOH estimation can enable some critical functions sampling equipment, rendering them unsuitable in real-time online
+of BMS, such as safety incident mitigation, useable lifespan extension, monitoring requirements. Model-based methods are further subdivided
+* Corresponding author. School of Electrical Engineering, Yancheng Institute of Technology, Yancheng No. 1, Hope Avenue Middle Road, Yancheng, 224051,
+Jiangsu, China
+E-mail address: siminpeng@ycit.edu.cn(S. Peng).
+https://doi.org/10.1016/j.energy.2025.139463
+Received 6 November 2025; Received in revised form 21 November 2025; Accepted 26 November 2025
+Available online 11 December 2025
+0360-5442/© 2025 Elsevier Ltd. All rights are reserved, including those for text and data mining, AI training, and similar technologies.
+
+--- PAGE 2 ---
+H. Yang et al. E n e r g y 342 (2026) 139463
+into electrochemical models and equivalent circuit models (ECMs) [11]. window to achieve high-precision and universal estimation of battery
+Electrochemical models offer precise characterization of kinetic pro- SOH. However, it is significant challenge to incorporate battery elec-
+cesses within porous electrodes [12]. Nevertheless, the real-time SOH trochemical mechanisms with strong nonlinearity and multiscale char-
+estimation using these models is severely constrained. This limitation acteristics into the stable and effective PINN loss formulations. The GAN,
+stems from the high computational cost of solving multiphysics-coupled on the other hand, construct an adversarial framework between a
+partial differential equation systems and the challenge in determining generator and a discriminator [31]. This framework aims to synthesize
+time-varying parameters. ECMs method can reduce computational virtually aged data with physical plausibility, thereby augmenting the
+dimensionality through the incorporation of recursive algorithms like diversity and scale of training datasets to bridge the gap between limited
+Kalman filtering [13]. However, the temperature sensitivity of circuit sample data and complex battery aging patterns. Yao [32] et al. pro-
+component parameters [14] and operational noise interference will posed a SOH estimation method for lithium batteries based on GAN data
+induce capacity estimation drift particularly during advanced stages of augmentation and feature mapping modules to achieve SOH estimation
+battery aging with the intensification of parameter nonlinearity [15]. with small samples. It should be noted that battery degradation exhibits
+Contrastingly, data-driven methods can circumvent explicit strong temporal dependency and path dependence, making it difficult
+modeling and stringent measurement by automatically learning com- for standard GANs to generate physically consistent multi-cycle degra-
+plex nonlinear relationships between battery operational data (voltage, dation sequences.
+current, temperature) [16] and SOH [17]. These methods deliver robust At present, one of key constraints of advanced data-driven SOH es-
+SOH estimation performance under varying conditions and noise while timators lies in their inability to dynamically track the multi-time-scale
+maintaining computational efficiency compatible with real-time BMS evolution of battery degradation patterns [33]. Raw operational se-
+deployment. Furthermore, they significantly reduce reliance on physical quences encapsulate a superposition of phenomena: rapid micro-cycles,
+models and enable flexible utilization of diverse health features (HFs) medium-term usage seasonality, and the gradual, irreversible capacity
+[18]. In recent years, some advanced algorithms have been employed to decline. Standard models, including LSTMs or Transformers processing
+achieve precise estimation of SOH, including classical methods such as raw data directly, may develop biases towards more prominent
+support vector machine (SVM) [19], gaussian process regression (GPR) short-term fluctuations due to their higher variance, inadvertently down
+[20], and random forest [21]. Meanwhile, deep learning frameworks weighting the critical but low-variance long-term degradation signal.
+have also played a significant role in SOH estimation. The long These bias manifests as poor extrapolation capability for end-of-life
+short-term memory (LSTM) networks [22] and gated recurrent units prediction and sensitivity to shifts in usage patterns not seen during
+(GRUs) [23], employing recurrent neural network (RNN) architectures, training.
+are capable of modeling battery aging trajectories. While the convolu- Recognizing this, some researchers have leveraged seasonal-trend
+tional neural networks (CNNs) excel at extracting degradation features decomposition using loess (STL) to preprocess the data. STL’s strength
+from electrochemical signatures [24], such as incremental capacity is its ability to forcibly separate the raw time series into three uncorre-
+analysis (ICA) curves. The integration of these approaches collectively lated components: a slowly varying Trend embodying capacity loss, a
+enables the development of end-to-end SOH prediction. While this Seasonal component capturing recurring patterns, and a Remainder
+approach constitutes a viable pathway for real-time SOH estimation, it is containing noise and irregularities. By feeding only the isolated Trend
+critically dependent on the quality of the training data and the specific component to SOH models, STL aims to eliminate interference [34].
+model architecture design. Nevertheless, this approach introduces a critical dependency: the de-
+Despite significant progress in data-driven SOH estimation method- composition’s success in cleanly isolating the true degradation trend is
+ologies, their practical deployment remains impeded by the prohibitive paramount, yet imperfect. STL parameters (like window size) need
+acquisition costs of full life-cycle degradation data. To overcome this careful tuning per battery/usage, and its linearity assumptions may not
+bottleneck under small-sample conditions, some novel paradigms inte- hold universally across complex aging scenarios. More crucially, even
+grating prior knowledge with data-driven approaches have emerged. with a perfect decomposition, the ultimate accuracy bottleneck shifts to
+Among them, transfer learning offers a significant pathway [25]. This the predictive model tasked with interpreting the Trend, which may still
+approach mitigates labeled data scarcity in new scenarios by fine-tuning lack the sophisticated temporal reasoning needed for precise long-term
+pre-trained source-domain models, transferring their generic aging SOH forecasting from this simplified signal.
+features to the target domain. Huang [26] et al. proposed a general The fundamental challenge of scarce labeled battery degradation
+estimation method for SOH of lithium batteries based on LSTM modeling data motivates the adoption of GAN-based generation strategies, which
+and transfer learning fine-tuning strategy. However, its estimation ac- can enhance the accuracy of state of health (SOH) estimation while
+curacy is highly contingent on the similarity of degradation mechanisms improving the generalization capability and robustness of supervised
+between source and target domains, posing significant risks of negative learning models. Current model-based and data-driven SOH estimation
+transfer. Semi-supervised learning, meanwhile, focuses on exploiting the methods face significant limitations, especially dealing with limited
+vast amount of long-term idle, unlabeled operational data within BMS labeled aging data and complex operating conditions. These conven-
+[27]. By leveraging sparse labeled capacity values, it guides models to tional approaches primarily suffer from three key issues: (i) Model ca-
+capture the implicit statistical patterns of aging trajectories, effectively pacity is constrained by the scarcity of high-fidelity labeled aging
+unlocking the application potential of these low-value data. Lin [28] datasets, limiting generalizability across diverse operating conditions;
+et al. proposed a SOH estimation method for lithium batteries using (ii) Intrinsic degradation dynamics cannot be effectively separated from
+semi-supervised learning combined with double regressors by utilizing a non-stationary noise——such as long-term capacity attenuation and
+large amount of unlabeled data. However, its SOH accuracy is critically multi-scale seasonal variations using inadequate decomposition tech-
+sensitive to the quality and distribution of sparse labels. niques; (iii) Critical temporal dependencies, including hierarchical pe-
+Meanwhile, the battery SOH estimation precision can be enhanced riodic patterns in capacity fade, cannot be concurrently captured by
+by high battery model accuracy. Physics-informed neural networks existing SOH estimation architectures. To address these challenges, an
+(PINN) incorporate electrochemical mechanisms—such as SEI growth enhanced feature learning framework is proposed to alleviate data
+kinetics—as regularization terms into the learning process [29]. By limitations and significantly improve SOH estimation accuracy. The
+constraining network outputs through solid-phase diffusion residuals or main contributions are summarized as follows.
+equivalent circuit models, PINNs can significantly enhance the physical
+consistency and generalization capability of models when the data is 1) To mitigate the scarcity of battery aging data samples, a spectral-
+scarce. Tian [30] et al. proposed a dual-branch PINN framework normalized conditional generative adversarial network incorpo-
+embedded with the SEI model and the characteristics of the voltage rating feature matching and conditional batch normalization (SCF-
+2
+
+--- PAGE 3 ---
+H. Yang et al. E n e r g y 342 (2026) 139463
+Table 1 discharge at 1C rate (1.1A) to a cutoff voltage of 2.7V. Charge/discharge
+Overview of the three LIB datasets used for validation. rates remain fixed regardless of capacity degradation. Each cell has a
+Dataset NASA Calce Tsinghua rated capacity of 1.1Ah, reaching End-of-Life (EOL) at 70 % capacity
+retention (0.77Ah).
+Battery material LiCoO2 LiCoO2 Lix
+The Tsinghua University lithium-ion battery aging dataset includes
+(NiCoMn)1∕3O2
+Rated capacity 2.0 1.1 24 cyclic tests on commercial ternary material pouch cells with a nominal
+(Ah) capacity of 24Ah. Rate cycling is performed at 4C charge/discharge rates
+Temperature 24 25 25 under room temperature (25 ◦C). The experimental protocol employs
+(◦C)
+standard CC-CV charging to 4.2V with a cut-off current of 0.05C and CC
+Charge rate (C) 0.75 0.5 4
+Discharge rate 1.0 1.0 4 discharging to 2.5V. Data are sampled every 10 s. The test terminates
+(C) when capacity degrades to 80 % or the cycle count reaches 1800. A
+Voltage ranges Charge: to 4.2V Charge: to 4.2V Charge: to 4.2V summary of the three datasets, covering battery type, quantity, cycling
+(V) Discharge: to 2.7V, (cutoff) Discharge: to conditions, and cycle numbers, is given in Table 1. Meanwhile, the
+2.5V, or 2.2V Discharge: to 2.5V
+battery degradation trajectories of three datasets are shown in Fig. 1.
+2.7V
+GAN) is developed, enabling the capture of high-fidelity battery 2.2. Extraction of the HF dataset
+health feature vectors.
+2) To accurately characterize diverse battery aging behaviors under To enable quantitative and mechanism-driven assessment of battery
+complex operating conditions, an integrated model combining STL SOH, which critically determines system reliability and lifetime, a HF
+decomposition, iTransformer, and TimesNet is presented. dataset is constructed. Three degradation-sensitive temporal features
+3) A generative-augmented multi-modal temporal collaborative are extracted from standard CC-CV charging profiles. These indicators
+framework (G-MTC) is proposed for SOH estimation, which effec- comprise constant voltage charging duration (HF1), constant current
+tively integrates small-sample data augmentation with interpretable charging duration (HF2), and isobaric voltage rise time (HF3). The
+temporal decomposition modeling. calculation formulas for the three HFs are defined as follows:
+HF1 =tVmax (cid:0) t0 (1)
+2. Battery aging test and health features extraction
+where tvmax denotes the absolute timestamp when the voltage first rea-
+2.1. Battery aging test data ches or exceeds the predetermined upper threshold during charging. t0
+corresponds to the start time of the constant-current charging phase.
+This study utilizes three publicly recognized lithium-ion battery
+aging datasets: the NASA Ames PCoE dataset [35], the CALCE dataset HF2 =tImin (cid:0) tVmax (2)
+[36] and the Tsinghua dataset [37]. The NASA Ames PCoE lithium-ion
+battery aging dataset comprises commercial 18650 cylindrical cells
+where tVmax denotes the time instant when voltage reaches the upper
+(nominal capacity 2.0 Ah) cycled under controlled laboratory conditions
+voltage threshold, and tImin represents the moment when current drops
+at 24 ◦C. Each charge-discharge cycle follows a standardized protocol: to the termination current threshold.
+charging initiates in Constant Current (CC) mode at 1.5 An until the HF3 =tend (cid:0) tstart (3)
+voltage reaches 4.2 V, then switches to Constant Voltage (CV) mode
+until the current decays to 20 mA; discharging operates in CC mode at where tstart and tend denote the earliest times when the voltage first
+2.0 A to manufacturer-specified cutoff voltages (2.7 V for B5, 2.5 V for reaches or exceeds 3.8 V and 4.0 V, respectively.
+B6, 2.2 V for B7). Testing terminates when capacity degrades to 70 %– HF1 reduction correlates strongly with capacity fade and loss of
+80 % of the initial rated capacity. The dataset provides full time-series lithium inventory. HF2 prolongation directly manifests loss of active
+measurements per cycle, including voltage, current, temperature, and material and increased internal resistance. HF3 extension serves as a
+capacity, with notable capacity regeneration phenomena observed sensitive proxy for electrode polarization growth. These features provide
+during high-current discharges (e.g., 4.0 A for B34 cells). This dataset complementary degradation signatures. They are selected for their
+enables analysis of discharge-rate effects on degradation trajectories. distinct mechanistic links to aging. This combination requires only
+The battery measurement data originates from the Center for routine operational data. For each charge cycle, critical transition points
+Advanced Life Cycle Engineering (CALCE) at the University of Maryland are algorithmically identified. Feature vectors HFi = [HF1, HF2, HF3]
+[32,33], utilizing CS2-type pouch cells under standardized cycling form the HF dataset. It provides foundational input for SOH estimation
+conditions. All cells employ identical charging protocols: Constant models.
+Current (CC) charging at 0.5C (0.55A) until voltage cutoff, transitioning In practical applications, lithium-ion batteries frequently undergo
+to Constant Voltage (CV) mode until current decays to 0.05A, with partial charging within varying voltage ranges due to different usage
+Fig. 1. The battery degradation trajectories of three datasets.
+3
+
+--- PAGE 4 ---
+H. Yang et al. E n e r g y 342 (2026) 139463
+Fig. 2. Heatmaps of pearson correlation between charging HFs and SOH over voltage ranges.
+Fig. 3. Architecture of the conditional GAN with spectral normalization and feature matching.
+patterns. The variability of these charging voltage ranges directly in- 3. Methodology
+fluences the accuracy of state-of-health (SOH) estimation. As demon-
+strated in Fig. 2, analysis of battery B0007 from the NASA battery In practical battery management systems, the charging process of
+dataset reveals that the effectiveness of health features across different lithium-ion batteries is often not fully completed to the cutoff voltage in
+voltage ranges is highly dependent on the actual operating voltage each cycle. Instead, partial charging is conducted within different
+window. Specifically, optimal features emerge in distinct voltage seg- voltage ranges based on user habits or system strategies. Such variable
+ments, reflecting different aging mechanisms within the battery. charging patterns result in the operational data collected from BMS
+Consequently, the selection of the actual charging voltage range not only covering only limited and incomplete voltage windows. However, as
+determines the quality of available health features but also ultimately described in Section 2.2of this paper, the significance of effective health
+affects the reliability and precision of SOH estimation. This finding holds features is closely related to the charging voltage range. If the training
+significant guiding implications for the design of practical battery data only contain segments from specific voltage intervals, the SOH
+management systems. estimation model trained on such data will be unable to learn compre-
+hensive aging features across the entire available voltage range.
+Consequently, a sharp decline in generalization performance is observed
+4
+
+--- PAGE 5 ---
+H. Yang et al. E n e r g y 342 (2026) 139463
+when the model encounters new, unseen charging voltage patterns.
+by T va o r a ia d b d l r e e s c s h t a h r e g i i s n s g u e v o o f lt i a n g c e o m ra p n l g et e e s h a e n a d lt h in f c e o a m tu p re le d te is t d r a ib ta u ti r o e n co c r a d u s s e in d h h h 0 1 2 = = = c L L o e e n a a c k k a y y t R R ( e e z L L ,c U U ) ( ( B B N N ( ( W W 1 2 h h 0 1 ) ) ) ) (7)
+practical applications, an improved spectral normalization conditional h3 =LeakyReLU(BN(W3h2 ))
+generative adversarial network (SCF-GAN) is adopted for data ̃x=tanh(W4h3 )
+augmentation. In this method, the voltage range is taken as a conditional
+variable input to the generator, synthesizing high-fidelity health feature Among them, W is the weight matrix; h is the hidden state, repre-
+vectors under various virtual yet physically reasonable charging in- senting the output of each layer. In addition, concat represents vector
+tervals. Consequently, the diversity of training samples is significantly concatenation operations, and BN represents batch normalization
+expanded, and battery aging trajectories under different charging stra- operations:
+tegies are simulated. The generated data are utilized to train the sub- x(cid:0) μ
+sequent STL-Transformer-TimesNet model, enhancing the model’s BN(x)=γ σ +β (8)
+capability to learn universal aging patterns. This enables the G-MTC
+framework to achieve high-precision and strong-generalization SOH where γ and β are learnable parameters, while μ and σ represent the
+estimation under complex and variable voltage conditions. batch statistics. This design enables conditional information to modulate
+the feature distribution at each layer.
+3.1. GAN method
+(3) Discriminator network structure
+Generative Adversarial Networks (GANs), introduced by Goodfellow
+[38] et al., revolutionized generative modeling through adversarial The discriminator employs Spectral Normalization constraints to
+training. GANs consist of two neural networks: a generator G that pro- enhance training stability:
+duces synthetic data from random noise z, and a discriminator D that σ(W)=max‖Wu‖ (9)
+distinguishes real data x from generated samples G(z). The minimax ‖u‖ 2 =1 2
+objective is formulated as:
+The weight matrix W is constrained as:
+m
+G
+inm
+D
+axV(D,G)=Ex∼pdata [logD(x)]+Ez∼pz [log(1(cid:0) D(G(z)))] (4)
+W=
+W
+(10)
+σ(W)
+Here, pdata denotes the real data distribution, and pz is the prior distri-
+The forward propagation process of the network is:
+bution of latent variables. The generator aims to minimize V by fooling
+D, while the discriminator maximizes V through accurate classification. h0 =concat(x,c)
+This adversarial process drives both networks to improve iteratively h1 =LeakyReLU(W1h0 )
+until reaching a Nash equilibrium, where generated samples are indis- h2 =LeakyReLU(W2h1 ) (11)
+tinguishable from real data. h3 =LeakyReLU(W3h2 )
+D(x|c)=W4h3
+3.2. Improved conditional GAN Spectral normalization effectively controls the Lipschitz constant
+and alleviates the problem of mode collapse.
+This section introduces an enhanced Conditional Generative Adver-
+sarial Network (Conditional GAN) that integrates Spectral Normaliza- (4) Feature matching loss
+tion and Feature Matching techniques for generative modeling of battery
+health data. The proposed framework, with its architecture illustrated in To enhance the physical rationality of the generated samples, a
+Fig. 3, employs adversarial training to synthesize realistic battery feature matching loss constraint generator is introduced:
+degradation trajectories while preserving temporal correlations in [ ]
+electrochemical systems. Key innovations encompass. LFM =Ex∼pdata ‖∅ DG(z|c)(cid:0) ∅ D (x)‖2 2 (12)
+(1) Conditional Generative Adversarial Network Framework Here, ∅ D (x)represents the feature extractor of the intermediate layer of
+the discriminator (the output of the third layer in the code). This loss
+Conditional GAN achieves conditional data generation by jointly minimizes the Euclidean distance between the real sample and the
+learning the generator G and the discriminator D. The objective function generated sample in the discriminator’s feature space.
+is extended to:
+(5) Objective function
+m
+G
+inm
+D
+axV(D,G)=Ex∼pdata [logD(x|c)]+Ez∼pz [log(1(cid:0) D(G(z|c)|c))] (5)
+The final objective function is composed of the adversarial loss and
+Here, c represents the cycle period condition variable, z is the noise the feature matching loss:
+input, and x is the true feature vector. The generator G maps noise z and
+condition c to synthetic features:
+LD =(cid:0) E[logD(x|c)](cid:0) E[log(1(cid:0) D(G(z|c)|c))] (13)
+̃x=G(z|c),z∼N(0,I) (6) LG =(cid:0) E[logD(G(z|c)|c)]+λLFM (14)
+Here, λ =0.1 is the feature matching weight coefficient. This value was
+(2) Generator Network Structure
+determined through a grid search over {0.01, 0.1, 1.0} on a validation
+set. The optimization process adopts the Adam algorithm:
+The generator adopts a deep fully connected network and introduces
+Conditional Batch Normalization to enhance the conditional control θ G ←θ G (cid:0) η∇ θG LG (15)
+ability:
+θ D ←θ D (cid:0) η∇ θD LD (16)
+5
+
+--- PAGE 6 ---
+H. Yang et al. E n e r g y 342 (2026) 139463
+Fig. 4. Schematic of the attention-based Bi-LSTM network for dynamic fusion of multi-component predictions.
+3.3. Seasonal-trend decomposition using loess To address these challenges, a deep-specific learning framework has
+been developed. For the trend component, a deep TimesNet configura-
+Trull [39] et al. proposed the STL (Seasonal-Trend decomposition tion with multi-scale convolutional blocks is implemented to model non-
+using Loess) method as a principled approach to extract interpretable linear degradation pathways across varying time horizons. The seasonal
+temporal structures, which effectively decouples complex time series component utilizes a lightweight TimesNet variant equipped with
+dynamics into distinct mechanistic components. STL decomposes an adaptive period detection to capture irregular cyclic behaviors while
+input series Xt into three additive components: preventing overfitting to high-frequency noise.
+For the residual component, iTransformer’s channel-mixing mecha-
+Xt =Tt +St +Rt (17)
+nism is employed to extract non-linear interactions between voltage
+fluctuations and temperature variations that traditional models over-
+where Tt denotes the trend component, St the seasonal component with
+period p (e.g., p =12 for monthly data), and Rt is the residual compo- look. Each architecture processes multivariate inputs through dedicated
+10-step sliding windows. Shared adversarial training is incorporated to
+nent. Tt captures the long-term, monotonic capacity fade due to irre-
+enforce physical constraints like capacity monotonicity while preserving
+versible electrochemical degradation. St represents recurring, shorter-
+component-specific dynamics.
+term fluctuations often linked to periodic usage patterns or opera-
+tional cycles. Rt encompasses irregular variations, including measure-
+ment noise, capacity regeneration phenomena, and other stochastic
+3.4. TimesNet
+effects not captured by the trend or seasonality. This decomposition is
+pivotal for robust SOH estimation, as it explicitly separates complex,
+Wu [40] et al. proposed TimesNet as a universal time series analysis
+non-monotonic behaviors like capacity regeneration from the long-term
+framework based on multi-period temporal modeling. This framework
+degradation trend. By isolating these reversible capacity increases into
+introduces a novel approach by transforming 1D time series into 2D
+the residual component, the subsequent models (TimesNet and iTrans-
+spatiotemporal tensors, enabling explicit characterization of
+former) can focus on learning the persistent aging patterns from the
+intra-period variation (period-specific patterns) and inter-period evo-
+trend and seasonal components, while the iTransformer dedicated to the
+lution (cross-period dynamics). The implementation follows a
+residual captures these transient dynamics without allowing them to
+three-stage architecture.
+distort the fundamental SOH estimation.
+Traditional STL decomposition exhibits critical limitations when
+(1) Period Detection
+applied to battery state-of-health (SOH) estimation. The linear trend
+assumptions fail to capture complex capacity degradation patterns.
+Significant periods are extracted via Fast Fourier Transform (FFT):
+Fixed-period seasonality models cannot adapt to irregular charge-
+discharge cycles. Residual components are typically discarded as noise A=Avg(Amp(FFT(X))),{f1 ,…,fk }=argTopkf∈{1,…,T/2} (A) (18)
+despite containing valuable electrochemical signatures.
+where X
+∈RT×C
+denotes the input sequence (T: timesteps, C: channels),
+6
+
+--- PAGE 7 ---
+H. Yang et al. E n e r g y 342 (2026) 139463
+and fi represents the top-k significant frequencies. dynamically learn optimal weights for component fusion. The objective
+function integrates both prediction accuracy and weight regularization:
+(2) Timeseries-to-2D Transformation
+Ltotal =Lpred +λ⋅Lweight (24)
+The 1D sequence is reshaped into 2D tensors using detected periods
+pi =⌈T/fi ⌉: r w e h g e u r l e a ri L z p a re t d i o r n e p te r r e m se , n a t n s d t h λ e i s p t r h e e d i r c e t g io u n la r lo iz s a s, t io L n w e c ig o ht e f d fi e c n ie o n te t. s the weight
+Xi
+=Reshapepi,[T/pi](X),Xi ∈Rpi×[T/pi]
+(19)
+(2) Component Attention Mechanism
+The row dimension captures intra-period temporal points (e.g., sin-
+gle charge-discharge cycles), while the column dimension models inter- To capture the relative importance among different components, a
+period evolution (e.g., capacity degradation across cycles). component attention layer is introduced:
+(3) 2D Convolutional Learning ComponentAttention:xattn =x⊙Softmax(θ c ) (25)
+X ʹ i = P I a n r c a e m pt e io te n r ( - X sh i ) a , r X e o d ut I = nc A e d p a t p io ti n v e b M lo e c rg k e s (cid:0) p { r X o ʹ i c } e k i= s 1 s ) each periodic tensor ( : 20) TemporalAttention:z= ∑ t= T 1 α tht ,α t =∑ T j= e 1 xp e ( x v p T (cid:0) a v t T ) aj ) (26)
+Simultaneous learning of intra-period patterns and inter-period where x∈RB×T×D represents the input feature sequence, θ c denotes
+evolution is achieved through 2D convolutional operations. learnable component attention parameters, ht indicates the bidirectional
+LSTM hidden states, v represents the attention vector, and α t signifies
+the normalized attention weights across time steps.
+3.5. itransformer
+(3) Adaptive Weight Generation
+The iTransformer, an enhanced time series analysis model derived
+from the Transformer architecture, represents significant advancement w=Softmax(W4z3 +b4 ) (27)
+in the field. By integrating a dynamic graph attention mechanism and an
+iterative feature update strategy, the model effectively strengthens the
+where z3 represents the processed temporal context, W4 and b4 denote
+capacity to capture long-range dependencies in multivariate time series the weight matrix and bias of the fina ∑ l layer, and w∈R3 indicates the
+data. Its core innovation lies in transforming the static self-attention normalized fusion weights satisfying 3 i=1 wi =1.
+mechanism of conventional Transformers into a dynamically adjusted
+local-global interaction paradigm. While preserving the parallel (4) Component Fusion and Prediction
+( ( ) )
+computation advantages inherent to Transformer-based models, ∑3
+iTransformer achieves significant improvement in modeling accuracy ̂y=Wp ⋅ReLU Wf wi ⋅Xcomp,i +bf +bp (28)
+for complex temporal patterns through iterative optimization of graph- i=1
+structured attention weights.
+In the iTransformer framework, the prediction of future variables where xcomp,i represents the prediction of the i-th component, wi in-
+based on historical data is formulated as follows: dicates the corresponding learned fusion weight, Wf and Wp denote
+weight matrices of the prediction network, and ̂y signifies the final SOH
+h0=Embedding(X:,n) (21)
+n estimation.
+(cid:0) )
+Hl+1=TrmBlock Hl ,l=0,…,L(cid:0) 1 (22)
+(5) Optimization Strategy
+(cid:0) ) ( )
+Y:,n=Projection hL n (23) θ t+1 =θ t (cid:0) η t ⋅ √̅ ̂v ̅ m̂ ̅
+t
+̅̅t +ε +λ decay θ t (29)
+In this context, X denotes the input historical data; Y represents the
+predicted data; and H ={h1, …,hn} ∈RN×D comprises N embedded to- where θ t represents model parameters at step t, η t denotes the adaptive
+kens with D-dimensional features. Both the Embedding and Projection learning rate, m̂ t and ̂vt indicate bias-corrected moment estimates, and
+modules are implemented as multi-layer perceptrons (MLPs). λ decay =10(cid:0)5 represents the weight decay coefficient.
+This framework effectively captures the dynamic importance of
+different degradation components throughout the battery lifecycle,
+3.6. Bi-LSTM weight learner based on attention mechanism
+where the learned fusion weights adapt to changing degradation pat-
+terns, providing both accurate SOH estimation and interpretable
+As shown in Fig. 4, this paper proposes a bidirectional long short-
+component contributions.
+term memory network (Bi-LSTM) weight learner based on the atten-
+tion mechanism for dynamically learning the weight distribution of each
+component in time series prediction. This model adopts a dual attention 3.7. Multi-modal temporal collaborative SOH estimator via generative
+mechanism of component attention and time-step attention, and com- augmentation and decomposition
+bines bidirectional LSTM to capture temporal dependencies, achieving
+adaptive weighted fusion of the three prediction components of trend, In real-world applications, BMS often record operational data from
+seasonal and residual. The input consists of 9 features encompassing random partial charging segments within limited voltage windows (e.g.,
+predictions, errors, and ratios for each component, providing compre- 3.8V–4.0V), which fail to capture the complete set of effective health
+hensive information for the attention mechanisms to learn optimal features available across the full voltage range. To overcome this limi-
+weight distributions. tation, the SCF-GAN is trained on source batteries that provide complete
+charging data from the full voltage range (e.g., 3.6V–4.2V). Through this
+(1) Attention-based Bi-LSTM Framework training process, the model learns the underlying joint distribution of
+health features across the entire cycle life and spanning multiple voltage
+The proposed framework employs a dual-attention mechanism to intervals. When generating synthetic data for a target battery with
+7
+
+--- PAGE 8 ---
+H. Yang et al. E n e r g y 342 (2026) 139463
+Fig. 5. Schematic architecture of the proposed G-MTC framework for battery SOH estimation under small-sample scenarios.
+limitations are presented: degradation patterns are inadequately repre-
+Tables 2
+sented under limited sample conditions, and multi-scale temporal de-
+The configuration of generator.
+pendencies cannot be captured. To enable these challenges to be
+Layer type Architecture Activation Special modules overcome, a hybrid framework that integrates generative data
+details function
+augmentation with component-specific deep learning is proposed.
+Input layer concat(z, c) – Vector concatenation
+Hidden Fully connected ReLU Conditional batch (1) Generative data augmentation via improved GAN:
+layer 1 normalization (CBN)
+Hidden Fully connected ReLU Conditional batch
+layer 2 normalization (CBN) To mitigate the scarcity of labeled degradation data, an improved
+Hidden Fully connected ReLU Conditional batch Spectral-normalized Conditional GAN with Feature matching and Con-
+layer 3 normalization (CBN) ditional Batch Normalization (SCF-GAN) is employed. A random noise
+Output Fully connected Tanh –
+vector *z* conditioned on battery characteristics (e.g., chemistry) and
+layer
+usage conditions are taken by the generator G, and high-fidelity battery
+health feature vectors are synthesized. Spectral normalization is applied
+limited voltage coverage, the SCF-GAN utilizes the cycle condition to to both generator and discriminator weights to enhance training sta-
+produce health feature vectors that are physically consistent with the bility and prevent mode collapse. Crucially, the generator is constrained
+battery’s aging stage. by feature matching loss to learn realistic feature distributions in the
+The architecture of the proposed generative-augmented multi-modal discriminator’s latent space, while precise control over the generation
+temporal collaborative framework (G-MTC) is depicted in Fig. 5. As is process based on the conditioning variables is ensured by conditional
+established in Section 3, when SOH estimation is conducted by relying batch normalization. Physically plausible degradation trajectories
+solely on raw temporal features or single-model decomposition, inherent across multiple cycles are generated by this mechanism, effectively
+8
+
+--- PAGE 9 ---
+H. Yang et al. E n e r g y 342 (2026) 139463
+Tables 3 The decomposed components (trend, seasonality, residual) are
+The configuration of discriminator. modeled distinctly using specialized deep learning architectures. The
+Layer type Architecture Activation Special modules trend component (Tt), representing core degradation, is processed by
+details function TimesNet, which captures intra-period and inter-period evolution
+Input layer concat(x/G(z c), – Vector Concatenation through two-dimensional transformation of detected cycles. The sea-
+c) sonality component (St), containing repetitive patterns, is handled by a
+Hidden layer Fully connected LeakyReLU Spectral Normalization variant of TimesNet incorporating adaptive cycle detection for irregular
+1 (SN) periods. The residual component (Rt), potentially holding electro-
+Hidden layer Fully connected LeakyReLU Spectral Normalization
+chemical features, is modeled by iTransformer, which captures
+2 (SN)
+Hidden layer Fully connected LeakyReLU Spectral Normalization nonlinear dependencies through channel mixing. The outputs of these
+3 (SN) specialized models are integrated by the fusion module of the G-MTC
+Hidden Fully connected LeakyReLU Spectral Normalization framework, which employs an attention-enhanced LSTM weight learner.
+layer4 (SN) The configuration of the attention-enhanced LSTM weight learner is
+Output layer Fully connected Sigmoid –
+shown in Table 4. This module extracts temporal features via bidirec-
+tional LSTM and combines temporal attention with component attention
+mechanisms to dynamically learn optimal fusion weights for each
+Tables 4
+component. All models were trained with a unified configuration using a
+The configuration of attention-enhanced LSTM weight learner.
+learning rate of 0.001, a batch size of 32, and an early stopping criterion
+Module name Core configuration parameters (patience of 50 epochs) on the validation set to determine the effective
+Input layer Feature dimension: 9d; Feature types: Predictions, errors, number of training epochs.
+ratios of trend/seasonal/residual components This design ensures that the weighted combination precisely cap-
+Component attention Learnable parameters: Feature weight vector; Activation tures disentangled multi-scale temporal dynamics while maintaining
+layer function: Softmax
+model interpretability. Leveraging complementary information extrac-
+Bi-LSTM layer Input dimension: 9; Hidden size: 16 (32 for bidirectional
+combined); Number of layers: 1; Dropout: 0.3; Batch_first: ted from each component, the entire framework is trained either end-to-
+True end or in carefully staged manners, optimized using a composite loss
+Time-step attention Input dimension: 32 (lstm output); Activation function: function and an early stopping strategy. This enables SOH estimation to
+layer Tanh +Softmax
+benefit simultaneously from expanded data distributions and the deep
+Weight generation Network structure: 32 → 128→64 → 32→3; Activation
+network function: Leakyrelu (α =0.1); Normalization: modeling of multi-scale dynamics achieved by the decomposition ar-
+Batchnorm1d; Dropout: 0.3; Output activation: Softmax chitecture and specialized fusion modules.
+Feature weighted Operation: First 3d features of last time-step ×
+fusion module Component weights 4. Methodology experimental results and discussions
+Final prediction layer Network structure: 3 → 16→1; Activation function: Relu
+The data splitting strategy was meticulously designed to align with
+expanding the training dataset under limited sample constraints. The our framework’s premise of knowledge transfer from batteries with
+configuration of the improved GAN is shown in Tables 2 and 3. complete data to those with limited data. Specifically, the source bat-
+teries (e.g., NASA B0005, B0006; CALCE CS2-35, CS2-37), which pro-
+(2) Component-Specific deep temporal modeling & G-MTC fusion: vide complete charging data across the full voltage range (e.g.,
+3.6V–4.2V), were used exclusively to train the SCF-GAN model. For the
+Fig. 6. Comparison of generation quality among GAN, CGAN, and SCF-GAN.
+9
+
+--- PAGE 10 ---
+H. Yang et al. E n e r g y 342 (2026) 139463
+Table 5
+SOH estimation performance of baseline models with original and SCF-GAN-augmented features.
+Battery Feature type Model MAE% MAPE% RMSE% R2
+B0005 Original features CNN 3.1522 4.0921 5.2140 0.8220
+LSTM 2.2206 2.8631 3.4390 0.9211
+Transformer 1.9946 2.5652 3.1645 0.9327
+SCF-GAN-augmented CNN 1.6125 2.0686 2.5824 0.9544
+LSTM 1.1038 1.4093 1.7678 0.9786
+Transformer 1.1389 1.4704 1.7663 0.9791
+B0006 Original features CNN 3.4468 4.4771 5.4527 0.8854
+LSTM 3.0378 4.0515 4.8440 0.9161
+Transformer 2.2685 2.9706 3.5415 0.9521
+SCF-GAN-augmented CNN 1.9463 2.5407 3.2411 0.9594
+LSTM 1.5605 2.0743 2.6091 0.9756
+Transformer 1.2090 1.5999 2.0142 0.9854
+B0018 Original features CNN 3.6756 4.7063 5.6682 0.6640
+LSTM 2.6400 3.4163 4.1394 0.8256
+Transformer 2.6289 3.3758 4.0110 0.8331
+SCF-GAN-augmented CNN 2.7016 3.5087 4.2762 0.8188
+LSTM 1.8185 2.3418 2.9008 0.9148
+Transformer 1.5066 1.9405 2.5064 0.9368
+CS-36 Original features CNN 5.1739 5.9923 7.3252 0.5553
+LSTM 3.6761 4.2534 5.2476 0.7726
+Transformer 3.4062 3.9327 4.8241 0.8057
+SCF-GAN-augmented CNN 3.0437 3.5327 4.3703 0.8441
+LSTM 1.9720 2.2702 2.8296 0.9324
+Transformer 2.1378 2.4684 3.0625 0.9218
+CS-37 Original features CNN 4.3807 5.1318 6.2574 0.5493
+LSTM 3.1686 3.7054 4.5838 0.7567
+Transformer 2.7420 3.2065 3.9660 0.8182
+SCF-GAN-augmented CNN 2.4478 2.8652 3.5387 0.8556
+LSTM 2.0242 2.3790 2.9830 0.8992
+Transformer 1.5459 1.8008 2.2594 0.9403
+CS-38 Original features CNN 4.3873 5.0551 6.1576 0.3769
+LSTM 3.1953 3.6788 4.5677 0.6563
+Transformer 2.7625 3.1811 3.9200 0.7467
+SCF-GAN-augmented CNN 2.4423 2.8136 3.4713 0.8019
+LSTM 2.0121 2.3249 2.8941 0.8638
+Transformer 1.5327 1.7577 2.2061 0.9187
+target batteries under small-sample scenarios (e.g., NASA B0007, ⎧ √ √ ̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅
+B
+t
+t t
+v
+r
+h h
+o 0
+a
+e a
+l 0
+i
+t
+t
+n
+a 1
+s
+i
+t
+g
+u
+8
+n
+h
+e
+b
+;
+g
+e s
+C w
+(
+e S
+fi
+A
+q
+i
+C
+r
+n
+u
+L
+s
+F
+d C
+e
+t
+- n
+o E
+G
+6
+w
+t
+0
+A
+C s
+S N
+%
+S ,
+O
+2
+)
+t
+H l
+- h
+,
+e
+3
+v
+e
+a
+6
+e
+a
+r
+, a
+s n
+l i
+t
+v C
+s
+d
+i
+a
+m
+a
+S
+t
+i
+t
+2
+h
+l
+a
+i
+a -
+e
+o
+t
+3 b
+i
+n
+o
+8 l
+g
+e
+n
+(
+e
+)
+n
+,
+n
+c
+m
+e
+w
+e
+y
+x
+r
+c
+o
+h
+t
+a
+l
+d
+i e
+2
+l
+c
+e
+s
+0
+h
+f l e .
+w
+%
+a
+o
+T t
+e n
+)
+u h
+r
+,
+l e
+r i
+y
+a
+s e
+n
+c p
+d
+s d
+h o
+t i
+r
+r
+t
+s
+s
+e
+o
+i
+s
+t c
+s
+n
+r
+e
+t
+t
+i
+s o
+b
+(
+s
+s
+l
+fi
+u
+o
+e
+d
+t
+n
+p
+g
+i
+a
+a
+a o
+i t c
+l
+r n
+a a
+a
+2
+l
+t
+f
+f
+0
+l
+i
+r
+r
+y
+o
+o
+o
+%
+n
+m
+m
+s
+)
+p
+e
+l
+s
+p
+s n
+i
+e
+t
+o
+a
+s
+t
+u
+s
+u
+r i n t
+r r
+f
+i
+c
+o
+e
+t a o
+e s
+r
+l ⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎨ R
+M
+M
+A
+S
+E
+E
+=
+=
+1 L
+√ √
+∑L
+1 L ∑
+⃒ ⃒
+t
+y
+=
+L
+t
+1
+(cid:0)
+(cid:0) y
+y
+t
+ʹ t
+(cid:0)
+⃒ ⃒
+y ʹ t ) 2
+b
+t M
+I a n
+h
+r
+a
+T
+t t
+e
+t
+e i
+t
+r C
+T
+c l
+e
+e
+l
+h
+r
+b
+e
+f
+C
+i
+e
+r y
+e
+a
+a o
+e
+s
+m
+r r
+a
+x
+e e
+l
+w
+p
+e l o
+c
+w
+e
+i
+i
+w
+o
+t
+5
+r
+h
+o
+i
+d -
+i
+m
+1
+r
+o
+n
+e
+k
+u
+3 d
+e
+g ’
+5
+t
+n
+s f
+i 0
+t
+n
+o
+l
+g
+s
+0
+e
+r e
+a
+a
+P ,
+n a
+k
+r
+y
+e
+R
+e
+i
+t
+f r
+n
+A h
+a
+c
+a
+g
+o
+i
+o
+M
+l r i
+n
+n
+z
+a
+:
+a
+d
+a
+1
+n
+3
+n t
+u
+6
+y
+i
+.
+d
+c
+9
+o
+t
+n
+G
+i
+r
+e
+a
+n
+i
+d
+B
+c g
+n
+f o
+)
+a o
+d
+t
+.
+r
+p
+e
+r
+m
+o
+s
+2
+a
+T
+t
+u b
+.
+a
+e
+h 0
+s i
+d
+t
+e
+l
+.
+i
+1
+i e
+o
+t
+o
++
+v
+a
+y
+n
+n
+p
+a .
+c
+l
+a
+p
+f
+u
+u
+r
+r 1
+p
+o
+a
+o 1
+e
+t
+m
+a
+i
+r
+8
+o
+c
+s
+. h
+n
+o
+t
+T
+h
+e
+n
+o
+s e
+e
+a
+f
+n
+l
+i
+t
+t
+n
+c
+a
+h
+p
+o
+v
+r
+e
+a
+m
+g
+o r
+e
+p
+l a
+p
+v
+t
+r
+l
+u
+e l
+o
+e
+b
+d
+t
+p
+l
+e
+a
+o
+r
+e
+t
+i
+s
+n
+t
+x
+(
+e
+e
+C
+p
+d
+r
+t
+P
+e
+i
+h
+e
+G
+r
+U
+i
+s
+i s -
+-
+,
+:
+⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎪⎩
+R
+M
+2
+A
+=
+PE
+1
+=
+(cid:0)
+∑
+∑
+t=
+t
+L
+L
+=
+1
+1
+⃒ ⃒
+(cid:0)
+y
+y
+t
+t
+(cid:0)
+(cid:0)
+y
+y
+ʹ t
+ʹ t
+⃒ ⃒
+)
+/
+2 /
+∑
+∑
+t=
+L
+L
+1
+y
+(cid:0)
+t
+yt (cid:0) y ʹ t ) 2
+(30)
+t=1 t=1
+ments are performed. An early stopping criterion (patience of 50 epochs
+on validation loss) was applied to all models to terminate training and where y, y′ and y ʹ represent reference, predicted, and average values,
+t
+prevent overfitting. respectively.
+4.1. Statistical indicators
+4.2. Generated data evaluation
+When evaluating our developed battery health status (SOH) predic-
+To quantitatively define the small sample scenario and ensure the
+tion method, we used multiple statistical indicators (including root
+reproducibility of our experiments, we established a data regime that
+mean square error (RMSE), mean absolute error (MAE), mean absolute
+reflects practical constraints. For the target batteries, the original
+percentage error (MAPE), R2) to ensure the comprehensiveness and
+training set was constructed to simulate a common situation in real-
+accuracy of the evaluation. These indicators not only help us quantify
+world applications where BMS data is available only for a limited
+the predictive performance of the model but also guide us to further
+number of initial cycles within a specific, incomplete voltage window (e.
+optimize the model structure. The formula is as follows: g., 3.8V–4.0V). The number of original cycles for each target battery was
+set to the first 20 % of their respective total cycle life. To augment this
+scarce data, our SCF-GAN was employed to generate 5 complete syn-
+thetic datasets for each original target battery set. This augmentation
+strategy effectively expanded the training sample size fivefold, trans-
+forming a challenging small-sample problem into a more tractable one
+for the subsequent temporal model.
+10
+
+--- PAGE 11 ---
+H. Yang et al. E n e r g y 342 (2026) 139463
+Fig. 7. SOH estimation results with original and augmented features on NASA batteries.
+To systematically evaluate the effectiveness of the proposed SCF- under their constrained operational windows.
+GAN method in generating battery health feature data under incom- As shown in Fig. 6, a comparative analysis based on five categories of
+plete charging voltage ranges, a conditional generation experiment is evaluation indicators is conducted, revealing that significant differences
+designed. The experiment aims to augment the health features for target are found among the three generation methods in terms of the quality of
+batteries with limited voltage coverage by leveraging the complete data generated battery health feature data. Regarding the preservation of
+distribution from source batteries. statistical characteristics, it is observed that the maximum percentage
+Specifically, batteries Th5 from the Tsinghua dataset and CS-35 from difference in mean for the data generated by GAN can be up to 7.12 %,
+the CALCE dataset are selected as the target batteries, representing and the maximum fluctuation in the percentage difference of standard
+practical scenarios where BMS only records random partial charging deviation can be up to 14.26 %. For the data generated by CGAN, the
+segments (e.g., 3.8V–4.0V). In contrast, batteries Th6 and CS-37 are maximum percentage difference in mean is recorded as 3.82 %, and the
+employed as the source batteries, providing complete charging data maximum percentage difference in standard deviation is recorded as
+across the full voltage range (e.g., 3.6V–4.2V) to learn the underlying 11.23 %. In contrast, SCF-GAN is demonstrated to have the best ability
+feature distribution. The HFs are extracted from the source batteries to preserve statistical characteristics, with its percentage difference in
+(Th6, CS-37) according to Section 2.2to form a comprehensive training mean always being kept not exceeding 0.52 % and the maximum per-
+set for the SCF-GAN model. The voltage range is incorporated as a centage difference in standard deviation being kept not exceeding 2.86
+conditional variable during training. The trained SCF-GAN is then used %, significantly outperforming the two comparison methods. This
+to generate the three health features (HF1, HF2, HF3) for the target exceptional performance is attributed to SCF-GAN’s conditional batch
+batteries (Th5, CS-35) within their specific, incomplete voltage in- normalization and feature matching mechanisms, which enforce stricter
+tervals. For each target battery, five sets of HF data are generated, adherence to the original data distribution while maintaining training
+significantly expanding the training samples available for these batteries stability through spectral normalization.
+11
+
+--- PAGE 12 ---
+H. Yang et al. E n e r g y 342 (2026) 139463
+Fig. 8. SOH estimation results with original and augmented features on Calce batteries.
+In terms of distribution consistency, it is found that the maximum KL through its conditional batch normalization architecture, which effec-
+divergence of the data generated by GAN can be up to 3.83, and the tively encodes battery type and cycle count constraints into the gener-
+maximum Wasserstein distance can be up to 382.64. For the data ation process while preserving appropriate variability. Based on a
+generated by CGAN, the maximum KL divergence is measured as 2.02, comprehensive evaluation of all indicators, it can be concluded that the
+and the maximum Wasserstein distance is measured as 218.74. By data generated by SCF-GAN is found to perform best in terms of the
+comparison, SCF-GAN is shown to exhibit the best distribution consis- ability to preserve statistical characteristics and distribution consis-
+tency, with its KL divergence being kept not exceeding 0.54 and the tency, providing a higher-quality data augmentation basis for battery
+maximum Wasserstein distance being kept not exceeding 58.73, signif- SOH estimation.
+icantly outperforming traditional generation methods. The significantly
+improved distribution matching stems from SCF-GAN’s joint feature
+4.3. SOH estimation model performance evaluation
+matching strategy, which minimizes the divergence between real and
+generated distributions at multiple feature levels, combined with spec-
+To ensure a fair comparison, all baseline models (CNN, LSTM, and
+tral normalization that ensures stable training dynamics and prevents
+Transformer) were trained using the exact same Health Features (HFs)
+mode collapse.
+as the proposed G-MTC framework. To validate the effectiveness of the
+Regarding outlier control, it is noted that the maximum outlier ratio
+HFs data generated by the developed SCF-GAN, extensive experiments
+of the data generated by SCF-GAN is determined to be 5.3 %. Although it
+are carried out on multiple battery batteries from both the NASA and
+is slightly higher than the maximum value of 4.3 % for GAN, it is
+CALCE datasets. The validation sets included batteries B6, B7, and B18
+significantly lower than the 9.5 % for CGAN, demonstrating better
+from the NASA dataset, and batteries CS-36, CS-37, and CS-38 from the
+overall generation stability. This balanced performance reflects SCF-
+CALCE dataset. Three widely adopted baseline models in relevant fields,
+GAN’s ability to generate diverse yet physically plausible samples
+namely CNN, LSTM, and Transformer, are utilized to evaluate SOH
+12
+
+--- PAGE 13 ---
+H. Yang et al. E n e r g y 342 (2026) 139463
+Fig. 9. SOH estimation results and decomposed component predictions using the STL-based framework.
+estimation performance using the augmented dataset. The detailed and is attributed to B18’s more complex and irregular degradation
+estimation errors are summarized in Table 5. Scatter plots of estimated patterns. The scatter plots show that while the augmented data points
+versus true SOH values for the NASA batteries (B6, B7, B18) and CALCE are generally closer to the reference line for all models, the improvement
+batteries (CS-36, CS-37, CS-38) are presented in Figs. 7 and 8respec- is less pronounced compared to B5 and B6.
+tively. In both figures, the true SOH values are plotted along the hori- Fig. 8 shows SOH estimation results with original and augmented
+zontal axis, while the estimated values are shown on the vertical axis. A features on Calce batteries. (a), (d), and (g) show the CNN-estimated
+reference line indicating ideal estimation (y =x) is included in each plot SOH results for CS-36, CS-37, and CS-38. (b), (e), and (h) show the
+for visual comparison. LSTM-estimated SOH results for CS-36, CS-37, and CS-38. (c), (f), and (i)
+Fig. 7 shows SOH estimation results with original and augmented show the Transformer-estimated SOH results for CS-36, CS-37, and CS-
+features on NASA batteries (a), (d), and (g) show the CNN-estimated 38. As shown in Fig. 8, the evaluation results on the more complex
+SOH results for B5, B6, and B18. (b), (e), and (h) show the LSTM- CALCE dataset demonstrate consistent improvements across all three
+estimated SOH results for B5, B6, and B18. (c), (f), and (i) show the models when using SCF-GAN-augmented data. The Transformer model
+Transformer-estimated SOH results for B5, B6, and B18. As shown in achieves the most significant error reduction, decreasing the mean ab-
+Fig. 7, the performance improvement varies across different NASA solute error by 33 % compared to baseline performance, with an average
+batteries and models. For batteries B5 and B6, all three models absolute error of 1.9 % across the three batteries. The CNN model shows
+demonstrate significant improvement with SCF-GAN-augmented data. substantial improvement with 29 % error reduction, maintaining an
+The CNN model shows error reduction of 38 % for B5 and 36 % for B6, average absolute error of 2.2 %. The LSTM model demonstrates mean-
+while the Transformer model achieves the best performance with 41 % ingful enhancement, achieving 27 % error reduction with an average
+and 39 % error reduction respectively. The LSTM model also shows absolute error of 2.4 %. All models maintain stable performance across
+substantial improvement, though slightly less than the other two the three battery units, with the Transformer model showing particu-
+models. In contrast, battery B18 shows a more moderate improvement larly strong capability in handling the dataset’s complexity through its
+across all models. The CNN model achieves 20 % error reduction, while attention mechanism. These results highlight the effectiveness of the
+LSTM and Transformer show 23 % and 22 % improvement respectively. SCF-GAN method in improving estimation accuracy across diverse bat-
+This relatively limited enhancement is consistent across all three models tery aging patterns and operational conditions. The consistent
+13
+
+--- PAGE 14 ---
+H. Yang et al. E n e r g y 342 (2026) 139463
+Fig. 10. Comparative performance of intelligent weighted fusion versus simple addition for SOH estimation.
+Table 6 Table 7
+Comparison of different methods for SOH estimation error analysis on the NASA Comparison of different methods for SOH estimation error analysis on the Calce
+battery dataset. battery dataset.
+Battery method MAE% MAPE% RMSE% R2 Battery method MAE% MAPE% RMSE% R2
+B0005 SVR 4.1234 4.5678 5.1234 0.6234 CS-36 SVR 4.2329 4.5782 5.2392 0.5871
+GPR 3.9876 4.1237 4.8765 0.6821 GPR 3.8792 4.2098 4.8751 0.6384
+RF 4.3478 4.7990 5.4751 0.5458 RF 4.2098 4.8513 5.2098 0.5988
+CNN 2.3779 2.5489 3.4622 0.7678 CNN 2.9012 3.2387 3.9052 0.6852
+LSTM 2.1235 2.4896 3.1463 0.7952 LSTM 2.6985 3.0179 3.6895 0.7982
+Transformer 2.5671 2.7126 3.4531 0.7254 Transformer 3.0125 3.2856 3.6899 0.7548
+Developed method 0.5678 0.6742 0.7435 0.9345 Developed method 0.9123 0.9257 0.9423 0.8569
+B0006 SVR 3.1217 4.0785 4.4612 0.6543 CS-37 SVR 4.5812 4.9821 5.5682 0.5562
+GPR 4.2146 4.2562 5.3456 0.5876 GPR 4.0987 4.4328 5.0895 0.6213
+RF 3.8765 4.3210 4.9821 0.6124 RF 4.4346 4.7852 5.2463 0.5874
+CNN 2.4896 2.7852 3.5786 0.7456 CNN 3.0145 3.3589 4.0158 0.6895
+LSTM 2.2345 2.5689 3.2347 0.7834 LSTM 2.7952 3.1546 3.7859 0.7895
+Transformer 2.6985 2.8901 3.6851 0.7145 Transformer 3.2489 3.8799 4.1589 0.6689
+Developed method 0.6798 0.7890 0.8901 0.9123 Developed method 0.9568 0.9842 0.9875 0.8457
+B0018 SVR 4.7891 5.4239 5.7238 0.5132 CS-38 SVR 4.9215 5.2589 5.9874 0.4887
+GPR 4.3251 4.6513 5.2910 0.5987 GPR 4.5689 4.8762 5.5682 0.5785
+RF 4.6592 4.8927 5.6582 0.5469 RF 4.7685 5.0985 5.7698 0.5268
+CNN 2.6821 3.0128 3.1769 0.7238 CNN 3.1856 3.4598 4.1589 0.6782
+LSTM 2.4986 2.7890 3.4921 0.7953 LSTM 2.9058 3.2687 3.9018 0.7256
+Transformer 2.8901 3.0123 3.8945 0.6918 Transformer 3.2587 3.4892 4.2358 0.6879
+Developed method 0.8946 0.9012 0.9123 0.8765 Developed method 0.9358 0.9458 0.9553 0.8345
+performance improvement across all models confirms the method’s LSTM networks are introduced to adaptively assign intelligent weights
+value for large-scale battery health management applications, particu- to individual components within the framework, thereby further
+larly for complex datasets like CALCE. enhancing estimation accuracy and robustness. To highlight the value of
+the proposed intelligent weighted fusion mechanism, we compared it
+4.4. Multi-component temporal fusion for battery SOH estimation with a simple direct summation fusion method, and the results
+demonstrate its superior capability in accurately tracking the actual
+This section aims to validate the effectiveness of the proposed fusion battery capacity degradation trajectory.
+method for SOH estimation under extreme data scenarios. The Tsinghua The final fused SOH prediction, presented in Fig. 9(a), shows a highly
+and Calce datasets are employed, and battery aging data are augmented consistent trajectory with the actual fading capacity, indicating excel-
+using the improved GAN method described earlier. Specific experi- lent overall estimation performance. The internal composition of this
+mental groups are detailed in Table 3. Under this configuration, a result is elucidated by the decomposed components in the subsequent
+comprehensive evaluation of the proposed fusion model is conducted: sub-figures. Fig. 9(b) displays the extracted trend component, which
+the model first integrates STL decomposition, iTransformer, and Time- captures the slow, monotonic decline inherent to battery aging and
+sNet to construct a robust SOH estimation framework; subsequently, provides a stable foundation for the model. Fig. 9(c) presents the
+14
+
+--- PAGE 15 ---
+H. Yang et al. E n e r g y 342 (2026) 139463
+Table 8 accuracy and robustness overall.
+Comparison of different methods for SOH estimation error analysis on the The superior performance of the proposed intelligent weighted
+Thsinghua battery dataset. fusion method is demonstrated through experimental validation on the
+Battery method MAE% MAPE% RMSE% R2 Tsinghua and CALCE battery datasets, as illustrated in Fig. 10. A direct
+visual comparison within the figure reveals that the proposed method’s
+Th4 SVR 3.7689 4.0988 4.7658 0.6291
+GPR 4.3210 4.6872 5.3287 0.5893 estimation curve (e.g., represented by a solid line) tracks the actual
+RF 4.0952 4.4871 5.0988 0.6158 battery capacity degradation trajectory much more closely than the
+CNN 2.4589 2.7956 3.4887 0.7895 conventional direct sum method (e.g., represented by a dashed line).
+LSTM 2.2389 2.5879 3.4895 0.7989 This closer alignment across both datasets provides immediate visual
+Transformer 2.6897 2.9048 3.6879 0.7878
+evidence of its enhanced estimation precision and stability.
+Developed method 0.8597 0.8597 0.8529 0.8979
+Th6 SVR 4.5779 4.7895 5.4489 0.5879 Further insights can be drawn from the model’s internal attention
+GPR 4.8972 4.9875 5.8975 0.5462 mechanisms, visualized alongside the predictions. The patterns in these
+RF 3.9887 4.8952 4.9985 0.5977 attention weights show a dynamic allocation of focus over the battery’s
+CNN 2.6766 3.0178 3.6879 0.7568
+lifecycle. It is visually apparent that the model consistently assigns
+LSTM 2.4587 2.7892 3.4876 0.7721
+Transformer 2.9859 3.4879 3.9478 0.7005 greater importance to the trend component, which forms the stable
+Developed method 0.8679 0.8798 0.8921 0.8654 foundation of the degradation profile. Simultaneously, it adaptively le-
+Th7 SVR 4.7982 5.0997 5.7895 0.5789 verages the seasonal and residual components to refine details and
+GPR 4.0988 4.5428 5.6879 0.6054 capture transient dynamics. Crucially, the specific patterns of these
+RF 4.9621 4.9987 5.6871 0.5647
+attention distributions differ subtly between the Tsinghua and CALCE
+CNN 2.9995 3.1876 3.7952 0.7287
+LSTM 0.5879 2.9879 3.5879 0.7895 datasets. This observed adaptability indicates that the weighting
+Transformer 3.0182 3.2879 4.0589 0.6987 mechanism does not apply a fixed formula but intelligently adjusts the
+Developed method 0.8978 0.8979 0.9872 0.9124 contribution of each component in response to different battery degra-
+Th8 SVR 4.5679 4.6879 5.3879 0.5897
+dation characteristics and operational conditions.
+GPR 3.9879 4.3579 4.9857 0.6487
+In summary, the graphical evidence robustly validates that the
+RF 4.5897 4.8798 5.5479 0.5988
+CNN 2.9872 3.4879 3.9873 0.7264 intelligent weighted fusion method significantly outperforms the direct
+LSTM 2.6899 3.0147 3.6987 0.7712 sum baseline. Its ability to dynamically optimize the integration of
+Transformer 3.1579 3.3579 4.1579 0.7032 temporal components, as visually attested by the attention mechanism,
+Developed method 0.8905 0.9048 0.9157 0.8472
+endows the framework with superior accuracy, robustness, and vital
+cross-dataset generalization capability.
+seasonal component, reflecting recurring, shorter-term fluctuations
+around the main trend. In contrast, Fig. 9(d) illustrates the residual
+component, which exhibits a noisy and irregular pattern, aligning with 4.5. Performance comparison with the existing leading methods
+its nature of capturing stochastic variations and unmodeled dynamics. A
+comparative visual assessment of these sub-figures confirms that the For a fair and consistent comparison, all baseline method-
+final fused prediction in Fig. 9(a) is not merely a reflection of a single s—including classical machine learning models (SVR, GPR, RF) and
+component but a sophisticated synthesis. This result validates that the deep learning models (CNN, LSTM, Transformer)—were trained and
+fusion framework effectively leverages the complementary advantages evaluated using the identical set of Health Features (HFs) as the pro-
+of each component: the trend component provides a stable baseline, posed G-MTC framework. A comprehensive performance evaluation is
+while the seasonal and residual components refine estimation details. conducted to thoroughly assess the proposed G-MTC framework through
+Consequently, the framework demonstrates higher SOH estimation comparison against a range of established circumvent methods,
+encompassing both classical machine learning and modern deep
+Fig. 11. Comparison of RMSE for SOH estimation across different methods on NASA, CALCE, and Tsinghua datasets.
+15
+
+--- PAGE 16 ---
+H. Yang et al. E n e r g y 342 (2026) 139463
+learning approaches. Selected classical machine learning models for (3) The intelligent weighted fusion mechanism adaptively allocates
+comparison include support vector regression (SVR), gaussian process weights to the trend, seasonal, and residual components, effec-
+regression (GPR), and random forest (RF), while deep learning bench- tively leveraging their complementary strengths and improving
+marks comprise convolutional neural network (CNN), long short-term both SOH estimation accuracy and robustness. The fusion method
+memory (LSTM), and the standard transformer architecture. All demonstrates superior performance compared to simple additive
+models are evaluated under identical small-sample conditions using the combination, with dynamic attention allocation accurately
+NASA, CALCE, and Tsinghua datasets, with consistent health features reflecting the evolving importance of different components
+and evaluation metrics employed throughout the comparison. The throughout the battery lifecycle.
+outstanding performance of the developed method is attributed to
+several key innovations. It is important to acknowledge that this study was primarily vali-
+The comprehensive comparison results are systematically presented dated using datasets collected under controlled laboratory conditions (e.
+in Table 6、Tables 7 and 8, which summarizes all evaluation metrics g., constant temperature). In the future, the impact of varying operating
+including MAE, MAPE, RMSE, and R2, while the RMSE distribution conditions such as temperature and load profiles on the generalization of
+across different methods is additionally visualized using bar charts in the G-MTC framework will be investigated to achieve accurate SOH
+Fig. 11. Classical machine learning models (SVR, GPR, RF) demonstrate estimation under more complex and practical scenarios.
+the highest error ranges in all metrics, with RMSE values particularly
+distributed between 3.5 % and 6.0 %. Deep learning models (CNN, CRediT authorship contribution statement
+LSTM, Transformer) show improved but still limited performance across
+all evaluation indicators, with RMSE distributions ranging from 2.0 % to Hanhua Yang: Writing – review & editing, Writing – original draft,
+4.5 %. In marked contrast, the proposed G-MTC framework exhibits Validation, Methodology, Data curation. Simin Peng: Writing – review
+consistently superior performance in all metrics, with RMSE maintained & editing, Writing – original draft, Supervision, Project administration,
+below 1.0 % and significantly better results in MAE, MAPE, and R2. The Methodology, Funding acquisition, Conceptualization. Chong Chen:
+outstanding performance of the developed method is attributed to Software, Investigation, Data curation. Aihua Tang: Validation, Re-
+several key innovations. Data scarcity is effectively mitigated through sources, Investigation, Conceptualization. Quanqing Yu: Visualization,
+the improved GAN-based augmentation. Multi-scale temporal patterns Software, Investigation. Jianwen Zhang: Validation, Formal analysis,
+are explicitly captured via STL decomposition. Specialized architecture Data curation. Rui Li: Visualization, Methodology, Investigation,
+is employed for distinct component modeling. An attention-based fusion Conceptualization.
+mechanism dynamically integrates component predictions. This
+comprehensive approach ensures robust SOH estimation under small- Declaration of competing interest
+sample conditions.
+We confirm that neither the manuscript nor any parts of its content
+5. Conclusions are currently under consideration or published in another journal. All
+authors have approved the manuscript and agree with its submission to
+To accurately estimate the SOH of lithium-ion batteries under small- Energy. All authors are fluent English speakers, with considerable
+sample conditions, this study develops generative-augmented multi- expertise in the field of battery state of health and battery management
+modal temporal collaborative framework (G-MTC). This developed system. We have no conflicts of interest to declare. We declare that we
+framework effectively integrates few-sample data augmentation with have no known competing financial interests or personal relationships
+interpretable temporal decomposition modeling. First, an improved that could have appeared to influence the work reported in this paper.
+spectral-normalized conditional generative adversarial network (SCF- Do not hesitate to contact us if you have any questions about the
+GAN) incorporating feature matching and conditional batch normali- manuscript.
+zation is designed to reconstruct the battery degradation feature distri-
+bution and expand the sample space. Second, a hybrid STL-Transformer- Acknowledgments
+TimesNet architecture is introduced, in which the trend and seasonal
+components are modeled by TimesNet, while the residual component is This work was supported by the National Natural Science Foundation
+processed by iTransformer. Finally, an attention-based Bi-LSTM weight of China (52477226, 52277213); school-level research projects of Yan-
+learner is employed to dynamically fuse the predictions from these three cheng Institute of Technology (xjr2021052) and General Project of
+components. The accuracy of the developed method is evaluated on Yancheng Basic Research Program (YCBK2024035).
+multiple public datasets under small-sample settings. The main experi-
+mental findings are summarized as follows. Data availability
+(1) The developed SCF-GAN effectively generates high-fidelity bat- Data will be made available on request.
+tery health feature data, even under incomplete charging voltage
+ranges. The generated data preserves the original statistical References
+characteristics and distribution consistency, with the mean per-
+centage difference remaining below 0.52 % and the maximum KL [1] Peng S, Zhang D, Dai G, Wang L, Jiang Y, Zhou F. State of charge estimation for
+LiFePO4 batteries joint by PID observer and improved EKF in various OCV ranges.
+divergence not exceeding 0.54, significantly outperforming
+Appl Energy 2025;377:124435.
+traditional GAN and conditional GAN. [2] Lu J, Xiong R, Tian J, Wang C, Sun F. Deep learning to estimate lithium-ion battery
+(2) The proposed G-MTC framework achieves high-precision SOH state of health without additional degradation experiments. Nat Commun 2023;14:
+2760.
+estimation under small-sample conditions. The experimental re-
+[3] Gao Y, Chen Y, Du Y, Chen H, Luan W. Impact of localized compression on lithium
+sults demonstrate that the proposed method achieves high esti- plating and capacity degradation in lithium-ion pouch cells. J Power Sources 2025;
+mation accuracy, with RMSE consistently below 1.0 %. This 652:237657.
+[4] Zhang Q, Song W, Zhou G, Wang J, Lu H, Guo B, et al. Gas production dynamic
+represents a substantial improvement, corresponding to a
+characteristics and fire-explosion risk of the full cycle of thermal runaway in 70Ah
+reduction in RMSE of approximately 60 %–80 % compared to Lithium iron phosphate battery in confined space. Appl Therm Eng 2025;279:
+traditional deep learning models such as CNN, LSTM, and 127988.
+Transformer across the NASA, CALCE, and Tsinghua datasets.
+16
+
+--- PAGE 17 ---
+H. Yang et al. E n e r g y 342 (2026) 139463
+[5] Peng S, Zhu J, Wu T, Tang A, Kan J, Pecht M. SOH early prediction of lithium-ion [22] Guo L, He H, Ren Y, Li R, Jiang B, Gong J. Prognostics of lithium-ion batteries
+batteries based on voltage interval selection and features fusion. Energy 2024;308: health state based on adaptive mode decomposition and long short-term memory
+132993. neural network. Eng Appl Artif Intell 2024;127:107317.
+[6] Tong L, Li Y, Xu Y, Fang J, Wen C, Zheng Y, et al. A combined method for state-of- [23] Hong J, Li K, Liang F, Yang H, Zhang C, Yang Q, et al. A novel state of health
+charge estimation for lithium-ion batteries based on IGWO-ASRCKF and ELM under prediction method for battery system in real-world vehicles based on gated
+various aging levels. J Energy Stroage 2025;124:116843. recurrent unit neural networks. Energy 2024;289:129918.
+[7] Peng S, Sun Y, Liu D, Yu Q, Kan J, Pecht M. State of health estimation of lithium- [24] Liang C, Tao S, Huang X, Wang Y, Xia B, Zhang X. Stochastic state of health
+ion batteries based on multi-health features extraction and improved long short- estimation for lithium-ion batteries with automated feature fusion using quantum
+term memory neural network. Energy 2023;282:128956. convolutional neural network. J Energy Chem 2025;106:205–19.
+[8] Peng S, Chen S, Zhang X, Liu J, Chen C, Kan J, et al. State of power prediction [25] Xiong R, Zhao P, Cao D, Zhang S, Zhan W, Tang M, et al. Transfer learning with
+considering cell inconsistency for a series-parallel battery pack based on adaptive composite kernel sparse gaussian process-aided model for probabilistic state of
+SRUKF and double-neural network. Appl Energy 2026;405:127239. health estimation of lithium-ion batteries against multi-source coupled harsh
+[9] Wang C, Wang R, Li J, Li Z, Yu Q. Cycle-Efficient modeling for degradation staging scenarios. Appl Energy 2025;401:126762.
+and early life prediction of lithium batteries. Green Energy Intell Transp 2025;3: [26] Huang K, Yao K, Guo Y, Lv Z. State of health estimation of lithium-ion batteries
+100338. based on fine-tuning or rebuilding transfer learning strategies combined with new
+[10] Wen H, Zhang M, Wang S, Zhao W, Zhao Z, Wang Y, et al. Extraction of health features mining. Energy 2023;282:128739.
+indicators from electrochemical impedance spectroscopy for state of health [27] Jiang F, Ren Y, Tang T, Wu Z, Xia Q, Sun B, et al. An adaptive semi-supervised self-
+estimation of lithium-ion batteries. eTransportation 2025;25:100456. learning method for online state of health estimation of lithium-ion batteries.
+[11] Peng S, Chen S, Liu Y, Yu Q, Kan J, Li R. State of power prediction joint fisher Energy 2024;305:132213.
+optimal segmentation and PO-BP neural network for a parallel battery pack [28] Lin C, Xu J, Mei X. Improving state-of-health estimation for lithium-ion batteries
+considering cell inconsistency. Appl Energy 2025;381:125130. via unlabeled charging data. Energy Storage Mater 2023;54:85–97.
+[12] Fu J, Song Z, Meng J, Guo J, Yang K, Liu W, et al. AI-augmented electrochemical [29] Wang S, Zhou R, Ren Y, Liu H, Lin Y, Lian C. A generalizable physics-informed
+model for lithium-ion battery: recent advances and perspectives. J Energy Chem neural network for lithium-ion battery SOH estimation utilizing partial charging
+2025;113:1056–80. segments. J Energy Chem 2025;112:977–86.
+[13] Yao W, Lai R, Tian Y, Li X, Tian J. State of health estimation of lithium-ion batteries [30] Tian A, He L, Ding T, Dong K, Wang Y, Jiang J. A generic physics-informed neural
+using data augmentation and feature mapping. IEEE Trans Transp Electrific 2025; network framework for lithium-ion batteries state of health estimation. Energy
+11:4895–905. 2025;332:137215.
+[14] Sun J, Liu Y, Kainz J. A comparative study of parameter identification methods for [31] Echabarri S, Do P, Vu H-C, Liegeois P-Y. A modified TimeGAN-based data
+equivalent circuit models for lithium-ion batteries and their application to state of augmentation approach for the state of health prediction of Lithium-ion batteries.
+health estimation. J Energy Storage 2025;114:115707. Reliab Eng Syst Saf 2025;264:111297.
+[15] Sun B, Zhang C, Xu Z, Liu S, Yang Q. Ultrasonic diagnosis of the nonlinear aging [32] Yao W, Lai R, Tian Y, Li X, Tian J. State of health estimation of lithium-ion batteries
+characteristics of lithium-ion battery under high-rate discharge conditions. J Power using data augmentation and feature mapping. IEEE Trans Transp Electrific 2025;
+Sources 2023;567:232921. 11:4895–905.
+[16] He H, Sun F, Wang Z, Lin C, Zhang C, Xiong R, et al. China’s battery electric [33] Yang X-G, Leng Y, Zhang G, Ge S, Wang C-Y. Modeling of lithium plating induced
+vehicles lead the world: achievements in technology system architecture and aging of lithium-ion batteries: transition from linear to nonlinear aging. J Power
+technological breakthroughs. Green Energy and Intelligent Transportation 2022;1: Sources 2017;360:28–40.
+100020. [34] Liu K, Li Y, Hu X, Lucu M, Widanage WD. Gaussian process regression with
+[17] Chen K, Li J, Liu K, et al. State of health estimation for lithium-ion battery based on automatic relevance determination kernel for calendar aging prediction of lithium-
+particle swarm optimization algorithm and extreme learning machine. Green ion batteries. IEEE Trans Ind Inf 2020;16:3767–77.
+Energy Intell Transp 2024;3:100151. [35] Saha B, Goebel K, Poll S, Christophersen J. Prognostics methods for battery health
+[18] Peng S, Wang Y, Tang A, Jiang Y, Kan J, Pecht M. State of health estimation joint monitoring using a bayesian framework. IEEE Trans Instrum Meas 2009;58:291–6.
+improved grey wolf optimization algorithm and LSTM using partial discharging [36] Hu X, Xu L, Lin X, Pecht M. Battery lifetime prognostics. Joule 2020;4:310–46.
+health features for lithium-ion batteries. Energy 2025;315:134293. [37] Lu Y, Lin J, Guo D, Zhang J, Wang C, He G, et al. Towards real-world state of health
+[19] Feng X, Weng C, He X, Han X, Lu L, Ren D, et al. Online state-of-health estimation estimation, Part 1: Cell-level method using lithium-ion battery laboratory data.
+for Li-Ion battery using partial charging segment based on support vector machine. eTransportation 2024;21:100338.
+IEEE Trans Veh Technol 2019;68:8583–92. [38] Goodfellow I, Pouget-Abadie J, Mirza M, Xu B, Warde-Farley D, Ozair S, et al.
+[20] Li F, Min Y, Zhang Y, Zhang Y, Zuo H, Bai F. State-of-health estimation method for Generative adversarial networks. Commun ACM 2020;63(11):139–44.
+fast-charging lithium-ion batteries based on stacking ensemble sparse gaussian [39] Trull O, García-Díaz JC, Peiro´-Signes A. Multiple seasonal STL decomposition with
+process regression. Reliab Eng Syst Saf 2024;242:109787. discrete-interval moving seasonalities. Appl Math Comput 2022;433:127398.
+[21] Mawonou KSR, Eddahech A, Dumur D, Beauvois D, Godoy E. State-of-health [40] Wu H, Hu T, Liu Y, Zhou H, Wang J, Long M. TimesNet: temporal 2D-Variation
+estimators coupled to a random forest approach for lithium-ion battery aging factor modeling for general time series analysis. Proceedings of the International
+ranking. J Power Sources 2021;484:229154. Conference on Learning Representations (ICLR). 2023.
+17
