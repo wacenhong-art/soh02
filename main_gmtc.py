@@ -20,13 +20,11 @@ def run_step(step_name, script_path):
     print(f"[OK] {step_name} 执行完成")
 
 def main():
-    # Innovation edition defaults: lightweight backbone and validation-selected
-    # Trend-only transfer, which avoids the observed Seasonal negative transfer.
-    os.environ.setdefault("TIMESNET_VARIANT", "light")
-    os.environ.setdefault("TRANSFER_PRETRAIN", "1")
-    os.environ.setdefault("TRANSFER_COMPONENTS", "Trend")
+    # Paper path: deep Trend TimesNet, lightweight Seasonal TimesNet, no extra transfer.
+    os.environ.setdefault("TIMESNET_VARIANT", "paper")
+    os.environ.setdefault("TRANSFER_PRETRAIN", "0")
     print("=" * 70)
-    print("轻量G-MTC + OSELM 锂电池SOH估计创新框架")
+    print("论文对齐G-MTC锂电池SOH估计框架")
     print("Paper: Data-augmented SOH estimation for lithium-ion batteries")
     print("=" * 70)
 
@@ -35,9 +33,7 @@ def main():
     run_step("SCF-GAN数据增强", "scripts/02_scf_gan.py")
     run_step("STL分解与分量预测", "scripts/03_time_series.py")
     run_step("注意力Bi-LSTM动态融合", "scripts/04_attention_fusion.py")
-    run_step("OSELM在线残差校正与消融", "scripts/05_oselm_correction.py")
-    run_step("因果多速率与可靠性评估", "scripts/06_causal_multirate_reliability.py")
-    run_step("创新模块消融汇总", "scripts/07_innovation_summary.py")
+    # OSELM、因果多速率和旧迁移创新不属于原论文主流程，默认不执行。
 
     # 步骤2：基线模型对比
     run_step("基线模型训练与对比", "baseline_compare.py")

@@ -21,3 +21,15 @@ def test_stable_seed_is_order_independent():
     assert M.stable_seed(42, "B0007", "Trend") == M.stable_seed(42, "B0007", "Trend")
     assert M.stable_seed(42, "B0007", "Trend") != M.stable_seed(42, "B0018", "Trend")
     assert M.stable_seed(42, "B0018", "Trend") != M.stable_seed(42, "B0018", "Residual")
+
+
+def test_paper_branch_shapes_and_weights():
+    x = torch.randn(4, 10, 4)
+    assert M.ts.TimesNet()(x).shape == (4, 1)
+    assert M.ts.LightweightTimesNet()(x).shape == (4, 1)
+    assert M.ts.iTransformer()(x).shape == (4, 1)
+    model = M.fusion.AttentionBiLSTMFusion([0, 0, 0], [1, 1, 1], 0, 1)
+    pred, weights = model(torch.randn(4, 10, 9), torch.randn(4, 3))
+    assert pred.shape == (4, 1)
+    assert weights.shape == (4, 3)
+    assert torch.allclose(weights.sum(1), torch.ones(4), atol=1e-6)

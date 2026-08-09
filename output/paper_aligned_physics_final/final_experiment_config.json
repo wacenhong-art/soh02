@@ -1,0 +1,27 @@
+{
+  "paper_reference": {
+    "BatteryID": "B0018",
+    "PhysicsMode": "Paper reference",
+    "MAE": 0.8946,
+    "MAPE": 0.9012,
+    "RMSE": 0.9123,
+    "R2": 0.8765
+  },
+  "published_logic": {
+    "trend": "deep TimesNet top-k multi-period",
+    "seasonal": "lightweight TimesNet",
+    "residual": "iTransformer",
+    "fusion": "9D dual-attention Bi-LSTM with 3-16-1 head",
+    "split": "60/20/20",
+    "source_batteries": [
+      "B0005",
+      "B0006"
+    ],
+    "target_batteries": [
+      "B0007",
+      "B0018"
+    ]
+  },
+  "unpublished_assumption": "L_weight approximated by L2 concentration penalty, lambda_weight=0.01",
+  "physics": "Trend only; lambda_phy=0.01; final SOH unconstrained"
+}

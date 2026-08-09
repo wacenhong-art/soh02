@@ -25,6 +25,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("time_series", ROOT / "scripts" / "03_time_series.py")
 ts = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(ts)
+FUSION_SPEC = importlib.util.spec_from_file_location("attention_fusion", ROOT / "scripts" / "04_attention_fusion.py")
+fusion = importlib.util.module_from_spec(FUSION_SPEC)
+FUSION_SPEC.loader.exec_module(fusion)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 HF_COLS = ["HF1", "HF2", "HF3"]
 BASE_SEED = ts.SEED
@@ -106,7 +109,8 @@ def metric_row(battery, mode, lam, true, pred, trend_pred):
     return {"BatteryID": battery, "PhysicsMode": mode, "LambdaPhy": lam,
             "RMSE": mean_squared_error(true, pred) ** 0.5,
             "MAE": mean_absolute_error(true, pred),
-            "MAPE": np.mean(np.abs((true - pred) / np.maximum(np.abs(true), 1e-8))) * 100,
+            # Paper Eq. (30): sum absolute error divided by sum reference SOH.
+            "MAPE": np.sum(np.abs(true - pred)) / np.maximum(np.sum(np.abs(true)), 1e-8) * 100,
             "R2": r2_score(true, pred),
             "TrendViolationRate": float(np.mean(delta > 0)) if len(delta) else 0.0}
 
@@ -140,26 +144,60 @@ def run_battery(battery, modes, lam, epochs, patience, out_dir, seed):
         raw_x = np.concatenate([norm(raw), lag], axis=1).astype(np.float32)
         trajectories = make_trajectories(aug, norm, lag, values, mean, std)
         vx, vy = ts.windows(raw_x[train_end:val_end], (values[train_end:val_end] - mean) / std)
-        model = (ts.iTransformer() if name == "Residual" else ts.TimesNet()).to(DEVICE)
+        if name == "Residual":
+            model = ts.iTransformer().to(DEVICE)
+        elif name == "Seasonal":
+            model = ts.LightweightTimesNet().to(DEVICE)
+        else:
+            model = ts.TimesNet().to(DEVICE)
         model, best = train_component(model, trajectories, (vx, vy), mode if name == "Trend" else "none",
                                       lam if name == "Trend" else 0.0, epochs, patience,
                                       out_dir / f"{battery}_{name.lower()}_{mode}_train_log.csv")
-        start = max(0, val_end - 2 * ts.SEQ_LEN)
-        xw, true_component = ts.windows(raw_x[start:n], values[start:n])
-        pred_component = ts.predict(model, xw) * std + mean
-        cycles = np.arange(start + ts.SEQ_LEN, n)
-        strict = cycles >= val_end
-        cycles, true_component, pred_component = cycles[strict], true_component[strict], pred_component[strict]
-        trained[(name, mode)] = (cycles, true_component, pred_component, best)
+        trained[(name, mode)] = {"model": model, "raw_x": raw_x, "values": values,
+                                 "mean": mean, "std": std, "best": best}
     for mode in modes:
-        cycles, true_trend, pred_trend, _ = trained[("Trend", mode)]
-        parts = [trained[("Trend", mode)], trained[("Seasonal", "none")], trained[("Residual", "none")]]
-        if not all(np.array_equal(cycles, p[0]) for p in parts): raise RuntimeError("分量Cycle未对齐")
-        pred = sum(p[2] for p in parts); true = soh[cycles]
-        all_rows.append(metric_row(battery, mode, 0.0 if mode == "none" else lam, true, pred, pred_trend))
-        pred_frames.append(pd.DataFrame({"BatteryID": battery, "PhysicsMode": mode, "Cycle": cycles,
-            "TrueSOH": true, "PredSOH": pred, "TrueTrend": true_trend, "PredTrend": pred_trend,
-            "PredSeasonal": parts[1][2], "PredResidual": parts[2][2]}))
+        mode_dir = out_dir / battery / mode
+        mode_dir.mkdir(parents=True, exist_ok=True)
+        selected = [("Trend", trained[("Trend", mode)]),
+                    ("Seasonal", trained[("Seasonal", "none")]),
+                    ("Residual", trained[("Residual", "none")])]
+        split_ranges = {"train": (0, train_end), "val": (train_end, val_end), "test": (val_end, n)}
+        split_frames = {}
+        for split, (split_start, split_end) in split_ranges.items():
+            # Two histories: one for component prediction and one for fusion windows.
+            history_start = 0 if split == "train" else max(0, split_start - 2 * ts.SEQ_LEN)
+            columns = {}
+            for name, item in selected:
+                xw, true_component = ts.windows(item["raw_x"][history_start:split_end],
+                                                item["values"][history_start:split_end])
+                prediction = ts.predict(item["model"], xw) * item["std"] + item["mean"]
+                cycles = np.arange(history_start + ts.SEQ_LEN, split_end)
+                if "Cycle" in columns and not np.array_equal(columns["Cycle"], cycles):
+                    raise RuntimeError("分量Cycle未对齐")
+                columns["Cycle"] = cycles
+                columns[f"True_{name}"] = true_component
+                columns[f"Pred_{name}"] = prediction
+            for hf_col in HF_COLS:
+                columns[hf_col] = raw.loc[columns["Cycle"], hf_col].to_numpy(np.float32)
+            split_frames[split] = pd.DataFrame(columns)
+            split_frames[split].to_csv(mode_dir / f"comp_pred_{split}.csv", index=False, encoding="utf-8-sig")
+        fusion_seed = stable_seed(seed, battery, "Trend") + 900
+        model_path = mode_dir / "fusion_att_bilstm_paper.pth"
+        fused_metrics, fused_test = fusion.run_fusion(
+            str(mode_dir), str(mode_dir), str(model_path), fusion_seed, epochs, patience
+        )
+        trend_lookup = split_frames["test"].set_index("Cycle")["Pred_Trend"]
+        true_trend_lookup = split_frames["test"].set_index("Cycle")["True_Trend"]
+        trend_pred = trend_lookup.loc[fused_test.Cycle].to_numpy()
+        true_trend = true_trend_lookup.loc[fused_test.Cycle].to_numpy()
+        true = fused_test.True_SOH.to_numpy(); pred = fused_test.Pred_SOH.to_numpy()
+        row = metric_row(battery, mode, 0.0 if mode == "none" else lam, true, pred, trend_pred)
+        row.update({f"Fusion{k}": value for k, value in fused_metrics.items() if k.startswith("MeanWeight")})
+        all_rows.append(row)
+        frame = fused_test.rename(columns={"True_SOH": "TrueSOH", "Pred_SOH": "PredSOH"}).copy()
+        frame.insert(0, "PhysicsMode", mode); frame.insert(0, "BatteryID", battery)
+        frame["TrueTrend"] = true_trend; frame["PredTrend"] = trend_pred
+        pred_frames.append(frame)
     return all_rows, pred_frames, {"BatteryID": battery, "Rows": n, "TrainEnd": train_end,
         "ValidationEnd": val_end, "TestRows": n-val_end, "Protocol": "target-first-60%-labeled-adaptation; next-20%-validation; last-20%-strict-test"}
 
@@ -184,7 +222,8 @@ def main():
     metrics.to_csv(out / "physics_ablation_metrics.csv", index=False, encoding="utf-8-sig")
     predictions.to_csv(out / "physics_ablation_predictions.csv", index=False, encoding="utf-8-sig")
     config = {"physics_modes": modes, "lambda_phy": a.lambda_phy, "epochs": a.epochs, "seed": a.seed,
-              "timesnet": "original", "transfer_pretrain": False, "oselm": False,
+              "timesnet": "paper-deep-trend-light-seasonal", "fusion": "paper-attention-bilstm",
+              "transfer_pretrain": False, "oselm": False,
               "causal_multirate": False, "scf_gan_algorithm_changed": False,
               "physics_applied_to": "STL Trend branch only", "protocols": protocols}
     (out / "physics_ablation_config.json").write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
