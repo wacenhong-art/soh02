@@ -148,8 +148,12 @@ class TemporalAttention(nn.Module):
 
 
 class AttentionBiLSTMFusion(nn.Module):
-    def __init__(self, comp_mean, comp_std, y_mean, y_std, feat_dim=9, hidden=LSTM_HIDDEN):
+    def __init__(self, comp_mean, comp_std, y_mean, y_std, feat_dim=9, hidden=LSTM_HIDDEN,
+                 fusion_mode="paper"):
         super().__init__()
+        if fusion_mode not in {"paper", "iprf"}:
+            raise ValueError("fusion_mode 仅支持 paper 或 iprf")
+        self.fusion_mode = fusion_mode
         self.register_buffer("comp_mean", torch.as_tensor(comp_mean, dtype=torch.float32))
         self.register_buffer("comp_std", torch.as_tensor(comp_std, dtype=torch.float32))
         self.register_buffer("y_mean", torch.tensor(float(y_mean), dtype=torch.float32))
@@ -186,6 +190,13 @@ class AttentionBiLSTMFusion(nn.Module):
             nn.ReLU(),
             nn.Linear(16, 1),
         )
+        # New module: STL Identity-Preserving Residual Fusion (IPRF).
+        # It retains T+S+R and learns only a bounded attention correction.
+        self.residual_head = nn.Sequential(
+            nn.Linear(context_dim + 3, 16),
+            nn.ReLU(),
+            nn.Linear(16, 1),
+        )
 
     def forward(self, x_seq, comp):
         x_seq = self.comp_attn(x_seq)
@@ -195,7 +206,16 @@ class AttentionBiLSTMFusion(nn.Module):
         weights = torch.softmax(self.weight_net(context), dim=-1)
         # Eq. (28) uses component predictions in their original STL scale.
         weighted_comp = weights * comp
-        return self.predict_head(weighted_comp), weights
+        if self.fusion_mode == "paper":
+            prediction = self.predict_head(weighted_comp)
+        else:
+            base = comp.sum(dim=1, keepdim=True)
+            comp_z = (comp - self.comp_mean) / self.comp_std
+            correction = self.y_std * torch.tanh(
+                self.residual_head(torch.cat([context, weights * comp_z], dim=1))
+            )
+            prediction = base + correction
+        return prediction, weights
 
 
 def weight_regularization(weights):
@@ -288,7 +308,7 @@ def prepare_split(df, comp_mean, comp_std, feat_mean, feat_std, y_mean, y_std):
 
 
 def run_fusion(input_dir=OUTPUT_PATH, output_dir=OUTPUT_PATH, model_path=None, seed=SEED,
-               epochs=EPOCHS, patience=PATIENCE):
+               epochs=EPOCHS, patience=PATIENCE, fusion_mode="paper"):
     set_seed(seed)
     os.makedirs(output_dir, exist_ok=True)
 
@@ -355,7 +375,9 @@ def run_fusion(input_dir=OUTPUT_PATH, output_dir=OUTPUT_PATH, model_path=None, s
         drop_last=False,
     )
 
-    model = AttentionBiLSTMFusion(comp_mean, comp_std, y_mean, y_std).to(device)
+    model = AttentionBiLSTMFusion(
+        comp_mean, comp_std, y_mean, y_std, fusion_mode=fusion_mode
+    ).to(device)
     save_path = model_path or os.path.join(MODEL_SAVE, "fusion_att_bilstm_paper.pth")
     model = train_model(model, train_loader, val_loader, save_path, epochs, patience)
 
@@ -425,7 +447,7 @@ def run_fusion(input_dir=OUTPUT_PATH, output_dir=OUTPUT_PATH, model_path=None, s
 
     out_path = os.path.join(output_dir, "gmtc_pred_result.csv")
     out_df.to_csv(out_path, index=False, encoding="utf-8-sig")
-    metrics = {"MAE": mae, "MAPE": mape, "RMSE": rmse, "R2": r2,
+    metrics = {"FusionMode": fusion_mode, "MAE": mae, "MAPE": mape, "RMSE": rmse, "R2": r2,
                "MeanWeightTrend": float(weights[:, 0].mean()),
                "MeanWeightSeasonal": float(weights[:, 1].mean()),
                "MeanWeightResidual": float(weights[:, 2].mean())}
@@ -441,7 +463,8 @@ def main():
     seed = int(os.getenv("FUSION_SEED", str(SEED)))
     epochs = int(os.getenv("FUSION_EPOCHS", str(EPOCHS)))
     patience = int(os.getenv("FUSION_PATIENCE", str(PATIENCE)))
-    run_fusion(input_dir, output_dir, model_path, seed, epochs, patience)
+    fusion_mode = os.getenv("FUSION_MODE", "paper").strip().lower()
+    run_fusion(input_dir, output_dir, model_path, seed, epochs, patience, fusion_mode)
 
 
 if __name__ == "__main__":

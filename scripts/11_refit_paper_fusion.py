@@ -16,6 +16,7 @@ def main():
     p.add_argument("--output-root", default=str(ROOT / "output" / "paper_aligned_physics_regularized"))
     p.add_argument("--epochs", type=int, default=150); p.add_argument("--patience", type=int, default=30)
     p.add_argument("--seed", type=int, default=42)
+    p.add_argument("--fusion-mode", choices=["paper", "iprf"], default="paper")
     a = p.parse_args(); source, out = Path(a.component_root), Path(a.output_root)
     rows = []
     for battery in ["B0007", "B0018"]:
@@ -24,7 +25,7 @@ def main():
             output_dir.mkdir(parents=True, exist_ok=True)
             metrics, pred = fusion.run_fusion(
                 str(input_dir), str(output_dir), str(output_dir / "fusion_att_bilstm_paper.pth"),
-                a.seed + int(battery[-2:]) + 900, a.epochs, a.patience,
+                a.seed + int(battery[-2:]) + 900, a.epochs, a.patience, a.fusion_mode,
             )
             comp = pd.read_csv(input_dir / "comp_pred_test.csv").set_index("Cycle")
             trend = comp.loc[pred.Cycle, "Pred_Trend"].to_numpy()

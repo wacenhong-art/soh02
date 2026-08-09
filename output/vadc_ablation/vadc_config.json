@@ -1,0 +1,11 @@
+{
+  "alpha_grid": [
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ],
+  "selection": "3-fold TimeSeriesSplit on validation only",
+  "test_used_for_fit": false
+}

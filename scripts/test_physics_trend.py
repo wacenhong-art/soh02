@@ -33,3 +33,7 @@ def test_paper_branch_shapes_and_weights():
     assert pred.shape == (4, 1)
     assert weights.shape == (4, 3)
     assert torch.allclose(weights.sum(1), torch.ones(4), atol=1e-6)
+    iprf = M.fusion.AttentionBiLSTMFusion([0, 0, 0], [1, 1, 1], 0, 1, fusion_mode="iprf")
+    iprf_pred, iprf_weights = iprf(torch.randn(4, 10, 9), torch.randn(4, 3))
+    assert iprf_pred.shape == (4, 1)
+    assert torch.allclose(iprf_weights.sum(1), torch.ones(4), atol=1e-6)
