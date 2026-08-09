@@ -1,0 +1,6 @@
+{
+  "all_gan_cycles_continuous": true,
+  "all_gan_cycles_inside_train_prefix": true,
+  "no_duplicate_gan_cycles": true,
+  "no_validation_or_test_augmentation": true
+}

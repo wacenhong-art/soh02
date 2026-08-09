@@ -86,24 +86,21 @@ def validate_component_df(df, name):
 
 def build_causal_features(df, comp_mean, comp_std):
     """
-    仅使用推理时可获得的信息构造 9 维特征：
+    仅使用推理时可获得的预测分量构造 9 维特征：
     1) 三个预测分量的标准化值
-    2) 三个分量在已观测历史时刻的预测误差
+    2) 三个预测分量的一阶增量
     3) 三个分量绝对值占比
 
-    滑窗的输入截止于目标时刻之前，因此窗口中的误差均来自已观测历史，
-    不使用待预测时刻的真实标签。
+    严格测试段不使用当前或此前测试循环的真实 SOH/STL 分量标签。
     """
     pred = df[["Pred_Trend", "Pred_Seasonal", "Pred_Residual"]].to_numpy(dtype=np.float32)
     pred_z = (pred - comp_mean) / comp_std
-
-    true = df[["True_Trend", "True_Seasonal", "True_Residual"]].to_numpy(dtype=np.float32)
-    error_z = (pred - true) / comp_std
+    delta_z = np.vstack([np.zeros((1, 3), dtype=np.float32), np.diff(pred_z, axis=0)])
 
     abs_sum = np.abs(pred).sum(axis=1, keepdims=True)
     ratio = np.abs(pred) / np.maximum(abs_sum, 1e-8)
 
-    return np.concatenate([pred_z, error_z, ratio], axis=1).astype(np.float32)
+    return np.concatenate([pred_z, delta_z, ratio], axis=1).astype(np.float32)
 
 
 class FusionDataset(Dataset):
@@ -308,7 +305,7 @@ def prepare_split(df, comp_mean, comp_std, feat_mean, feat_std, y_mean, y_std):
 
 
 def run_fusion(input_dir=OUTPUT_PATH, output_dir=OUTPUT_PATH, model_path=None, seed=SEED,
-               epochs=EPOCHS, patience=PATIENCE, fusion_mode="paper"):
+               epochs=EPOCHS, patience=PATIENCE, fusion_mode="paper", evaluate_test=True):
     set_seed(seed)
     os.makedirs(output_dir, exist_ok=True)
 
@@ -319,11 +316,14 @@ def run_fusion(input_dir=OUTPUT_PATH, output_dir=OUTPUT_PATH, model_path=None, s
 
     train_df = pd.read_csv(os.path.join(input_dir, "comp_pred_train.csv"))
     val_df = pd.read_csv(os.path.join(input_dir, "comp_pred_val.csv"))
-    test_df = pd.read_csv(os.path.join(input_dir, "comp_pred_test.csv"))
+    test_df = None
+    if evaluate_test:
+        test_df = pd.read_csv(os.path.join(input_dir, "comp_pred_test.csv"))
 
     validate_component_df(train_df, "train")
     validate_component_df(val_df, "val")
-    validate_component_df(test_df, "test")
+    if evaluate_test:
+        validate_component_df(test_df, "test")
 
     train_comp = train_df[["Pred_Trend", "Pred_Seasonal", "Pred_Residual"]].to_numpy(dtype=np.float32)
     comp_mean, comp_std = zscore_fit(train_comp, axis=0)
@@ -347,13 +347,16 @@ def run_fusion(input_dir=OUTPUT_PATH, output_dir=OUTPUT_PATH, model_path=None, s
     (X_val, C_val, y_val_z), _ = prepare_split(
         val_df, comp_mean, comp_std, feat_mean, feat_std, y_mean, y_std
     )
-    (X_test, C_test, y_test_z), test_y_full = prepare_split(
-        test_df, comp_mean, comp_std, feat_mean, feat_std, y_mean, y_std
-    )
+    test_arrays = None
+    if evaluate_test:
+        test_arrays, _ = prepare_split(
+            test_df, comp_mean, comp_std, feat_mean, feat_std, y_mean, y_std
+        )
 
-    y_test = test_y_full[SEQ_LEN:]
-
-    print(f"训练样本={len(X_train)}, 验证样本={len(X_val)}, 测试样本={len(X_test)}")
+    count_text = f"训练样本={len(X_train)}, 验证样本={len(X_val)}"
+    if evaluate_test:
+        count_text += f", 测试样本={len(test_arrays[0])}"
+    print(count_text)
     print(f"训练目标均值={y_mean:.4f}, 标准差={y_std:.4f}")
 
     train_loader = DataLoader(
@@ -368,13 +371,6 @@ def run_fusion(input_dir=OUTPUT_PATH, output_dir=OUTPUT_PATH, model_path=None, s
         shuffle=False,
         drop_last=False,
     )
-    test_loader = DataLoader(
-        FusionDataset(X_test, C_test, y_test_z),
-        batch_size=min(BATCH_SIZE, len(X_test)),
-        shuffle=False,
-        drop_last=False,
-    )
-
     model = AttentionBiLSTMFusion(
         comp_mean, comp_std, y_mean, y_std, fusion_mode=fusion_mode
     ).to(device)
@@ -420,8 +416,13 @@ def run_fusion(input_dir=OUTPUT_PATH, output_dir=OUTPUT_PATH, model_path=None, s
         return result, split_weights
 
     infer_split("train", train_df, (X_train, C_train, y_train_z))
-    infer_split("val", val_df, (X_val, C_val, y_val_z))
-    out_df, weights = infer_split("test", test_df, (X_test, C_test, y_test_z))
+    val_out, val_weights = infer_split("val", val_df, (X_val, C_val, y_val_z))
+    if evaluate_test:
+        out_df, weights = infer_split("test", test_df, test_arrays)
+        evaluated_split = "test"
+    else:
+        out_df, weights = val_out, val_weights
+        evaluated_split = "validation"
     y_test = out_df["True_SOH"].to_numpy()
     y_pred = out_df["Pred_SOH"].to_numpy()
 
@@ -431,7 +432,7 @@ def run_fusion(input_dir=OUTPUT_PATH, output_dir=OUTPUT_PATH, model_path=None, s
     r2 = r2_score(y_test, y_pred)
 
     print("\n" + "=" * 64)
-    print("G-MTC 修正版测试集指标")
+    print(f"G-MTC 修正版{evaluated_split}指标")
     print("=" * 64)
     print(f"MAE   : {mae:.4f} percentage points")
     print(f"MAPE  : {mape:.4f}%")
@@ -445,13 +446,16 @@ def run_fusion(input_dir=OUTPUT_PATH, output_dir=OUTPUT_PATH, model_path=None, s
     )
     print("=" * 64)
 
-    out_path = os.path.join(output_dir, "gmtc_pred_result.csv")
+    result_name = "gmtc_pred_result.csv" if evaluate_test else "gmtc_pred_validation_result.csv"
+    out_path = os.path.join(output_dir, result_name)
     out_df.to_csv(out_path, index=False, encoding="utf-8-sig")
-    metrics = {"FusionMode": fusion_mode, "MAE": mae, "MAPE": mape, "RMSE": rmse, "R2": r2,
+    metrics = {"EvaluatedSplit": evaluated_split, "FusionMode": fusion_mode,
+               "MAE": mae, "MAPE": mape, "RMSE": rmse, "R2": r2,
                "MeanWeightTrend": float(weights[:, 0].mean()),
                "MeanWeightSeasonal": float(weights[:, 1].mean()),
                "MeanWeightResidual": float(weights[:, 2].mean())}
-    pd.DataFrame([metrics]).to_csv(os.path.join(output_dir, "fusion_metrics.csv"), index=False)
+    metrics_name = "fusion_metrics.csv" if evaluate_test else "fusion_validation_metrics.csv"
+    pd.DataFrame([metrics]).to_csv(os.path.join(output_dir, metrics_name), index=False)
     print(f"结果已保存：{out_path}")
     return metrics, out_df
 
