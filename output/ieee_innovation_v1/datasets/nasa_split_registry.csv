@@ -1,0 +1,35 @@
+BatteryID,CurrentRole,FormalOuterTestEligible,FinalSplitAssigned,SOHResultInspectedThisPhase,DeclaredConditionSummary,Reason
+B0005,existing_source_train_contacted,False,False,False,room temperature; CC discharge 2A; cutoff 2.7V,Used by the frozen SCF-GAN source training protocol.
+B0006,existing_source_train_contacted,False,False,False,room temperature; CC discharge 2A; cutoff 2.5V,Used by the frozen SCF-GAN source training protocol.
+B0007,existing_target_dev_contacted,False,False,False,room temperature; CC discharge 2A; cutoff 2.2V,Previously inspected development evaluation battery.
+B0018,existing_target_dev_contacted,False,False,False,room temperature; CC discharge 2A; cutoff 2.5V,Previously inspected development evaluation battery.
+B0025,untouched_candidate_unassigned,True,False,False,"24C; 0.05Hz square-wave 4A, 50% duty; cutoff 2.0V",No model prediction or capacity error evaluated in this audit.
+B0026,untouched_candidate_unassigned,True,False,False,"24C; 0.05Hz square-wave 4A, 50% duty; cutoff 2.2V",No model prediction or capacity error evaluated in this audit.
+B0027,untouched_candidate_unassigned,True,False,False,"24C; 0.05Hz square-wave 4A, 50% duty; cutoff 2.5V",No model prediction or capacity error evaluated in this audit.
+B0028,untouched_candidate_unassigned,True,False,False,"24C; 0.05Hz square-wave 4A, 50% duty; cutoff 2.7V",No model prediction or capacity error evaluated in this audit.
+B0029,untouched_candidate_unassigned,True,False,False,43C; CC discharge 4A; cutoff 2.0V,No model prediction or capacity error evaluated in this audit.
+B0030,untouched_candidate_unassigned,True,False,False,43C; CC discharge 4A; cutoff 2.2V,No model prediction or capacity error evaluated in this audit.
+B0031,untouched_candidate_unassigned,True,False,False,43C; CC discharge 4A; cutoff 2.5V,No model prediction or capacity error evaluated in this audit.
+B0032,untouched_candidate_unassigned,True,False,False,43C; CC discharge 4A; cutoff 2.7V,No model prediction or capacity error evaluated in this audit.
+B0033,untouched_candidate_unassigned,True,False,False,24C; CC discharge 4A; cutoff 2.0V,No model prediction or capacity error evaluated in this audit.
+B0034,untouched_candidate_unassigned,True,False,False,24C; CC discharge 4A; cutoff 2.2V,No model prediction or capacity error evaluated in this audit.
+B0036,untouched_candidate_unassigned,True,False,False,24C; CC discharge 2A; cutoff 2.7V,No model prediction or capacity error evaluated in this audit.
+B0038,untouched_candidate_unassigned,True,False,False,24C and 44C; discharge levels 1/2/4A; cutoff 2.2V,No model prediction or capacity error evaluated in this audit.
+B0039,untouched_candidate_unassigned,True,False,False,24C and 44C; discharge levels 1/2/4A; cutoff 2.5V,No model prediction or capacity error evaluated in this audit.
+B0040,untouched_candidate_unassigned,True,False,False,24C and 44C; discharge levels 1/2/4A; cutoff 2.7V,No model prediction or capacity error evaluated in this audit.
+B0041,untouched_candidate_unassigned,True,False,False,4C; discharge levels 4A and 1A; cutoff 2.0V,No model prediction or capacity error evaluated in this audit.
+B0042,untouched_candidate_unassigned,True,False,False,4C; discharge levels 4A and 1A; cutoff 2.2V,No model prediction or capacity error evaluated in this audit.
+B0043,untouched_candidate_unassigned,True,False,False,4C; discharge levels 4A and 1A; cutoff 2.5V,No model prediction or capacity error evaluated in this audit.
+B0044,untouched_candidate_unassigned,True,False,False,4C; discharge levels 4A and 1A; cutoff 2.7V,No model prediction or capacity error evaluated in this audit.
+B0045,untouched_candidate_unassigned,True,False,False,4C; CC discharge 1A; cutoff 2.0V,No model prediction or capacity error evaluated in this audit.
+B0046,untouched_candidate_unassigned,True,False,False,4C; CC discharge 1A; cutoff 2.2V,No model prediction or capacity error evaluated in this audit.
+B0047,untouched_candidate_unassigned,True,False,False,4C; CC discharge 1A; cutoff 2.5V,No model prediction or capacity error evaluated in this audit.
+B0048,untouched_candidate_unassigned,True,False,False,4C; CC discharge 1A; cutoff 2.7V,No model prediction or capacity error evaluated in this audit.
+B0049,untouched_candidate_unassigned,True,False,False,4C; CC discharge 2A; cutoff 2.0V,No model prediction or capacity error evaluated in this audit.
+B0050,untouched_candidate_unassigned,True,False,False,4C; CC discharge 2A; cutoff 2.2V,No model prediction or capacity error evaluated in this audit.
+B0051,untouched_candidate_unassigned,True,False,False,4C; CC discharge 2A; cutoff 2.5V,No model prediction or capacity error evaluated in this audit.
+B0052,untouched_candidate_unassigned,True,False,False,4C; CC discharge 2A; cutoff 2.7V,No model prediction or capacity error evaluated in this audit.
+B0053,untouched_candidate_unassigned,True,False,False,4C; CC discharge 2A; cutoff 2.0V,No model prediction or capacity error evaluated in this audit.
+B0054,untouched_candidate_unassigned,True,False,False,4C; CC discharge 2A; cutoff 2.2V,No model prediction or capacity error evaluated in this audit.
+B0055,untouched_candidate_unassigned,True,False,False,4C; CC discharge 2A; cutoff 2.5V,No model prediction or capacity error evaluated in this audit.
+B0056,untouched_candidate_unassigned,True,False,False,4C; CC discharge 2A; cutoff 2.7V,No model prediction or capacity error evaluated in this audit.
