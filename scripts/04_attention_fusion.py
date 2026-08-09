@@ -70,14 +70,18 @@ def sliding_windows(seq_features, comp_features, target, seq_len):
 
 
 def validate_component_df(df, name):
-    required = {
-        "True_Trend", "Pred_Trend",
-        "True_Seasonal", "Pred_Seasonal",
-        "True_Residual", "Pred_Residual",
-    }
+    required = {"Pred_Trend", "Pred_Seasonal", "Pred_Residual"}
     missing = required.difference(df.columns)
     if missing:
         raise ValueError(f"{name} 缺少列：{sorted(missing)}")
+    has_true_soh = "True_SOH" in df.columns
+    has_true_components = {
+        "True_Trend", "True_Seasonal", "True_Residual"
+    }.issubset(df.columns)
+    if not (has_true_soh or has_true_components):
+        raise ValueError(
+            f"{name} 必须包含 True_SOH，或完整的三个 True_* 分量列"
+        )
     if len(df) <= SEQ_LEN:
         raise ValueError(f"{name} 仅有 {len(df)} 行，必须大于 SEQ_LEN={SEQ_LEN}")
     if df.isna().any().any():
@@ -101,6 +105,17 @@ def build_causal_features(df, comp_mean, comp_std):
     ratio = np.abs(pred) / np.maximum(abs_sum, 1e-8)
 
     return np.concatenate([pred_z, delta_z, ratio], axis=1).astype(np.float32)
+
+
+def true_soh_target(df):
+    """Return the evaluation/training target without exposing it to model inputs."""
+    if "True_SOH" in df.columns:
+        return df["True_SOH"].to_numpy(dtype=np.float32)
+    return (
+        df["True_Trend"].to_numpy(dtype=np.float32)
+        + df["True_Seasonal"].to_numpy(dtype=np.float32)
+        + df["True_Residual"].to_numpy(dtype=np.float32)
+    )
 
 
 class FusionDataset(Dataset):
@@ -146,7 +161,7 @@ class TemporalAttention(nn.Module):
 
 class AttentionBiLSTMFusion(nn.Module):
     def __init__(self, comp_mean, comp_std, y_mean, y_std, feat_dim=9, hidden=LSTM_HIDDEN,
-                 fusion_mode="paper"):
+                 fusion_mode="paper", stable_init=False):
         super().__init__()
         if fusion_mode not in {"paper", "iprf"}:
             raise ValueError("fusion_mode 仅支持 paper 或 iprf")
@@ -194,6 +209,24 @@ class AttentionBiLSTMFusion(nn.Module):
             nn.ReLU(),
             nn.Linear(16, 1),
         )
+        if stable_init and fusion_mode == "paper":
+            self.initialize_additive_reconstruction()
+
+    def initialize_additive_reconstruction(self):
+        """P1 initialization: begin near T+S+R without changing the network."""
+        final_weight_layer = self.weight_net[-1]
+        nn.init.zeros_(final_weight_layer.weight)
+        nn.init.zeros_(final_weight_layer.bias)
+        hidden_layer, output_layer = self.predict_head[0], self.predict_head[2]
+        nn.init.zeros_(hidden_layer.weight); nn.init.zeros_(hidden_layer.bias)
+        nn.init.zeros_(output_layer.weight); nn.init.zeros_(output_layer.bias)
+        for index in range(3):
+            hidden_layer.weight.data[2 * index, index] = 1.0
+            hidden_layer.weight.data[2 * index + 1, index] = -1.0
+            coefficient = 3.0 * self.comp_std[index] / self.y_std
+            output_layer.weight.data[0, 2 * index] = coefficient
+            output_layer.weight.data[0, 2 * index + 1] = -coefficient
+        output_layer.bias.data[0] = (self.comp_mean.sum() - self.y_mean) / self.y_std
 
     def forward(self, x_seq, comp):
         x_seq = self.comp_attn(x_seq)
@@ -201,18 +234,21 @@ class AttentionBiLSTMFusion(nn.Module):
         context = self.temp_attn(lstm_out)
 
         weights = torch.softmax(self.weight_net(context), dim=-1)
-        # Eq. (28) uses component predictions in their original STL scale.
-        weighted_comp = weights * comp
+        # The paper does not disclose feature scaling before Eq. (28).  Use
+        # train-fitted component statistics so the 3->16->1 head and the
+        # standardized SOH objective operate on compatible numerical scales.
+        comp_z = (comp - self.comp_mean) / self.comp_std
+        weighted_comp = weights * comp_z
         if self.fusion_mode == "paper":
-            prediction = self.predict_head(weighted_comp)
+            prediction_z = self.predict_head(weighted_comp)
         else:
             base = comp.sum(dim=1, keepdim=True)
-            comp_z = (comp - self.comp_mean) / self.comp_std
             correction = self.y_std * torch.tanh(
                 self.residual_head(torch.cat([context, weights * comp_z], dim=1))
             )
-            prediction = base + correction
-        return prediction, weights
+            physical_prediction = base + correction
+            prediction_z = (physical_prediction - self.y_mean) / self.y_std
+        return prediction_z, weights
 
 
 def weight_regularization(weights):
@@ -296,16 +332,14 @@ def prepare_split(df, comp_mean, comp_std, feat_mean, feat_std, y_mean, y_std):
 
     comp = df[["Pred_Trend", "Pred_Seasonal", "Pred_Residual"]].to_numpy(dtype=np.float32)
 
-    y = (
-        df["True_Trend"].to_numpy(dtype=np.float32)
-        + df["True_Seasonal"].to_numpy(dtype=np.float32)
-        + df["True_Residual"].to_numpy(dtype=np.float32)
-    )
-    return sliding_windows(features, comp, y, SEQ_LEN), y
+    y = true_soh_target(df)
+    y_z = (y - y_mean) / y_std
+    return sliding_windows(features, comp, y_z, SEQ_LEN), y
 
 
 def run_fusion(input_dir=OUTPUT_PATH, output_dir=OUTPUT_PATH, model_path=None, seed=SEED,
-               epochs=EPOCHS, patience=PATIENCE, fusion_mode="paper", evaluate_test=True):
+               epochs=EPOCHS, patience=PATIENCE, fusion_mode="paper", evaluate_test=True,
+               stable_init=False):
     set_seed(seed)
     os.makedirs(output_dir, exist_ok=True)
 
@@ -331,11 +365,7 @@ def run_fusion(input_dir=OUTPUT_PATH, output_dir=OUTPUT_PATH, model_path=None, s
     train_feat_raw = build_causal_features(train_df, comp_mean, comp_std)
     feat_mean, feat_std = zscore_fit(train_feat_raw, axis=0)
 
-    train_y_raw = (
-        train_df["True_Trend"].to_numpy(dtype=np.float32)
-        + train_df["True_Seasonal"].to_numpy(dtype=np.float32)
-        + train_df["True_Residual"].to_numpy(dtype=np.float32)
-    )
+    train_y_raw = true_soh_target(train_df)
     y_mean = float(train_y_raw.mean())
     y_std = float(train_y_raw.std())
     if y_std < 1e-8:
@@ -372,7 +402,8 @@ def run_fusion(input_dir=OUTPUT_PATH, output_dir=OUTPUT_PATH, model_path=None, s
         drop_last=False,
     )
     model = AttentionBiLSTMFusion(
-        comp_mean, comp_std, y_mean, y_std, fusion_mode=fusion_mode
+        comp_mean, comp_std, y_mean, y_std, fusion_mode=fusion_mode,
+        stable_init=stable_init,
     ).to(device)
     save_path = model_path or os.path.join(MODEL_SAVE, "fusion_att_bilstm_paper.pth")
     model = train_model(model, train_loader, val_loader, save_path, epochs, patience)
@@ -390,13 +421,9 @@ def run_fusion(input_dir=OUTPUT_PATH, output_dir=OUTPUT_PATH, model_path=None, s
                 pred_z, split_weights = model(xb.to(device), cb.to(device))
                 pred_z_all.append(pred_z.cpu().numpy().reshape(-1))
                 weight_all.append(split_weights.cpu().numpy())
-        pred = np.concatenate(pred_z_all)
+        pred = np.concatenate(pred_z_all) * y_std + y_mean
         split_weights = np.concatenate(weight_all)
-        true = (
-            source_df["True_Trend"].to_numpy(dtype=np.float32)
-            + source_df["True_Seasonal"].to_numpy(dtype=np.float32)
-            + source_df["True_Residual"].to_numpy(dtype=np.float32)
-        )[SEQ_LEN:]
+        true = true_soh_target(source_df)[SEQ_LEN:]
         meta = source_df.iloc[SEQ_LEN:].reset_index(drop=True)
         result = pd.DataFrame({
             "Cycle": meta["Cycle"].to_numpy(dtype=int),

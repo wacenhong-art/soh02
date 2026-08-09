@@ -1,0 +1,7 @@
+﻿BatteryID,PhysicsMode,MedianRMSELower,AtLeast3of5SeedsImprove,TrendViolationLower,BootstrapCIEntirelyBelowZero,MAENotWorse5Percent,R2NotMateriallyWorse
+B0007,monotonic,False,False,False,False,False,False
+B0007,smooth,False,True,False,True,True,True
+B0007,both,True,True,False,True,True,True
+B0018,monotonic,True,True,False,False,True,False
+B0018,smooth,False,False,False,False,True,False
+B0018,both,True,False,True,False,True,True

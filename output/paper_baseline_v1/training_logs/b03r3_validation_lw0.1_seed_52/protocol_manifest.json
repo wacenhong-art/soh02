@@ -1,0 +1,32 @@
+[
+  {
+    "BatteryID": "B0007",
+    "Rows": 168,
+    "TrainEnd": 100,
+    "ValidationEnd": 134,
+    "TestRows": 34,
+    "EvaluationSplit": "validation",
+    "TestLabelsUsedAsFeatures": false,
+    "STLFitEndExclusive": 100,
+    "ComponentFitEndExclusive": 80,
+    "ValidationLabelsUsedForComponentTraining": false,
+    "ComponentInput": "HF1/HF2/HF3+lagged-component",
+    "RecursiveStateClippedToTrainRange": true,
+    "Protocol": "target-first-60%-labeled-adaptation; next-20%-validation; last-20%-strict-test"
+  },
+  {
+    "BatteryID": "B0018",
+    "Rows": 128,
+    "TrainEnd": 76,
+    "ValidationEnd": 102,
+    "TestRows": 26,
+    "EvaluationSplit": "validation",
+    "TestLabelsUsedAsFeatures": false,
+    "STLFitEndExclusive": 76,
+    "ComponentFitEndExclusive": 60,
+    "ValidationLabelsUsedForComponentTraining": false,
+    "ComponentInput": "HF1/HF2/HF3+lagged-component",
+    "RecursiveStateClippedToTrainRange": true,
+    "Protocol": "target-first-60%-labeled-adaptation; next-20%-validation; last-20%-strict-test"
+  }
+]

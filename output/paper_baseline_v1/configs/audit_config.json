@@ -1,0 +1,25 @@
+{
+  "version": "paper_baseline_v1",
+  "git_head_at_audit": "c4e644041654d03258b73deea011da97ae18056c",
+  "paper_path": "C:\\Users\\ROG\\Documents\\Data-augmented SOH estimation for lithium-ion batteries under.pdf",
+  "paper_sha256": "f2b3cbc9ca5b79dfd5d617dcab0a9e825c7483b6bec26cbb851bddfc4d11d6e1",
+  "data_gates": {
+    "source_batteries_exactly_B0005_B0006": true,
+    "B0007_not_source_pretraining": true,
+    "raw_core_fields_complete": true,
+    "augmentation_train_only": true,
+    "gan_trajectories_continuous": true,
+    "gan_cycles_inside_train_prefix": true,
+    "stl_train_reconstruction": true
+  },
+  "device": "cpu",
+  "torch_version": "2.13.0+cpu",
+  "seeds": [
+    42,
+    52,
+    62,
+    72,
+    82
+  ],
+  "config_hash": "ab0058f9184d15a8b8f9a0cdbd40b5208411426747bd15b20ca0485e4da998c1"
+}

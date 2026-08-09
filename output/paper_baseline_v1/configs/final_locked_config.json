@@ -1,0 +1,31 @@
+{
+  "architecture": "original TimesNet + original TimesNet + iTransformer + Attention Bi-LSTM",
+  "epochs": 150,
+  "patience": 30,
+  "seeds": [
+    42,
+    52,
+    62,
+    72,
+    82
+  ],
+  "physics_mode": "none",
+  "lambda_phy": 0.0,
+  "lambda_weight": 0.1,
+  "fusion_stable_init": true,
+  "component_input": "HF+lagged-component",
+  "clip_recursive_state": true,
+  "split": "60/20/20",
+  "test_used_for_selection": false,
+  "git_head": "c4e644041654d03258b73deea011da97ae18056c",
+  "artifact_sha256": {
+    "scripts/04_attention_fusion.py": "6e52214dc5a1ba30264d44a011e76cf4564d53fbf8467448dd6ab21b26f0b7e6",
+    "scripts/08_physics_trend_ablation.py": "85355eeaff2f5d260cb9e386069683c6befce6dacd8901871b915665bcfc7591",
+    "scripts/21_paper_baseline_v1.py": "b1f0de001aaa391b44cce2a940b72d612e843e81280e0cc0484c83c5587502d6",
+    "data/hf_csv/B0007_hf.csv": "fcddb7fdb049149757af871eb70cfad0caf0bd9caaa09e01514d9ff10cfc4a8c",
+    "data/hf_csv/B0018_hf.csv": "d57b0ad9f4a70a7eb260d0717d05359e8f320d9b5d514bde7fd59018a71796a5",
+    "output/B0007_aug_train_hf.csv": "9e3a47f4ec6464983df0540861fc9fdbf7c623025335b7c7111bfe5267841608",
+    "output/B0018_aug_train_hf.csv": "ed8470101f8f3b13dc1cf424fca757e6218440b03321d2a1c93a211acbe5a1d0"
+  },
+  "config_hash": "c9b526cab0f080aaf480c10798ca8c234d022b34e566d9ba2b6ba3e0748b670a"
+}

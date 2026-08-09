@@ -1,0 +1,21 @@
+{
+  "models": [
+    "CNN",
+    "LSTM",
+    "Transformer"
+  ],
+  "seeds": [
+    42,
+    52,
+    62,
+    72,
+    82
+  ],
+  "epochs": 150,
+  "patience": 30,
+  "lr": 0.001,
+  "weight_decay": 1e-05,
+  "protocol": "target 60/20/20; SCF-GAN train-only; held-out labels real",
+  "test_used_for_tuning": false,
+  "paper_layer_details": "engineering approximation where PDF is silent"
+}

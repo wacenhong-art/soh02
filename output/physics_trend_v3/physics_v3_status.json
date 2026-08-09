@@ -1,0 +1,8 @@
+{
+  "PhysicsInnovationSupported": false,
+  "supported_modes": [],
+  "selected_lambda_phy": 0.1,
+  "test_used_for_selection": false,
+  "formal_test_completed": true,
+  "baseline_config_hash": "c9b526cab0f080aaf480c10798ca8c234d022b34e566d9ba2b6ba3e0748b670a"
+}

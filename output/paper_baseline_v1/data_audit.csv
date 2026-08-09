@@ -1,0 +1,17 @@
+﻿BatteryID,DatasetID,Rows,CycleStart,CycleEnd,MissingCoreRows,TrainEndExclusive,ValidationEndExclusive,STLTrainMaxReconstructionError,ContinuousCycle,InsideTrainPrefix
+B0005,raw,168,0,167,0,100,134,,True,True
+B0006,raw,126,0,125,0,75,100,,True,True
+B0007,raw,168,0,167,0,100,134,1.4210854715202004e-14,True,True
+B0007,0,100,0,99,0,100,134,,True,True
+B0007,1,100,0,99,0,100,134,,True,True
+B0007,2,100,0,99,0,100,134,,True,True
+B0007,3,100,0,99,0,100,134,,True,True
+B0007,4,100,0,99,0,100,134,,True,True
+B0007,5,100,0,99,0,100,134,,True,True
+B0018,raw,128,0,127,0,76,102,0.0,True,True
+B0018,0,76,0,75,0,76,102,,True,True
+B0018,1,76,0,75,0,76,102,,True,True
+B0018,2,76,0,75,0,76,102,,True,True
+B0018,3,76,0,75,0,76,102,,True,True
+B0018,4,76,0,75,0,76,102,,True,True
+B0018,5,76,0,75,0,76,102,,True,True

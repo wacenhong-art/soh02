@@ -1,0 +1,40 @@
+{
+  "paper_protocol": {
+    "status": "specified-but-not-equivalent-to-engineering-protocol",
+    "target_labeled_prefix": 0.2,
+    "synthetic_trajectories_per_target": 5,
+    "evidence": "PDF page 10, section 4.2",
+    "unresolved": "PDF does not fully disclose a reproducible validation/test boundary for every table"
+  },
+  "engineering_protocol": {
+    "source_scf_gan": [
+      "B0005",
+      "B0006"
+    ],
+    "targets": [
+      "B0007",
+      "B0018"
+    ],
+    "target_train_adaptation": 0.6,
+    "validation": 0.2,
+    "strict_test": 0.2,
+    "zero_label_cross_battery": false,
+    "target_test_status": "previously-contacted development evaluation sets",
+    "confirmation_limit": "requires untouched external battery/dataset or preregistered outer holdout"
+  },
+  "p0": {
+    "physics_mode": "none",
+    "lambda_phy": 0.0,
+    "trend_model": "original TimesNet",
+    "seasonal_model": "original TimesNet",
+    "residual_model": "iTransformer",
+    "fusion": "Attention Bi-LSTM paper mode",
+    "scf_gan_changed": false,
+    "transfer": false,
+    "oselm": false,
+    "causal_multirate": false,
+    "full_pinn": false,
+    "final_soh_constraint": false
+  },
+  "paper_conflict": "PDF specifies lightweight Seasonal TimesNet; task preregistration requires original TimesNet for both branches"
+}

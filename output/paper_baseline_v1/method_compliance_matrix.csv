@@ -1,0 +1,25 @@
+﻿PaperModule,Classification,PaperEvidence,CurrentCodeLocation,FullyImplemented,EngineeringApproximation,LeakageRisk,PendingOrNote
+HF1,Paper-specified,PDF p3 Eq.(1): constant-voltage charging duration,scripts/01_extract_hf.py:32-39,True,False,False,确认4.2V至20mA区间
+HF2,Paper-specified,PDF p3 Eq.(2): constant-current charging duration,scripts/01_extract_hf.py:40-46,True,False,False,代码先达到4.2V再搜索20mA；命名与PDF正文可能互换，需报告
+HF3,Paper-specified,PDF p3 Eq.(3): 3.8V至4.0V时间,scripts/01_extract_hf.py:48-50,True,False,False,无
+Hampel平滑,Engineering-stabilization,PDF未披露,scripts/01_extract_hf.py:17-29,False,True,True,center=True含未来邻点；P0数据已生成，必须披露且不作为在线因果特征
+SCF-GAN源电池,Paper-specified,PDF p9: NASA B0005/B0006仅用于SCF-GAN,scripts/02_scf_gan.py:39-59,True,False,False,B0007/B0018均未进入源训练
+SCF-GAN条件生成,Paper-specified,"PDF p5 Eqs.(5)-(16), Tables 2-3",scripts/02_scf_gan.py:76-187,False,True,False,论文未披露全部层宽；当前生成3个HF并保留真实训练SOH，属工程近似
+增强倍数,Paper-specified,PDF p10: 5套合成数据,scripts/02_scf_gan.py:189-227,True,False,False,DatasetID=0真实，1-5合成
+增强边界,Paper-specified,PDF p9-p10: 目标训练小样本增强,scripts/02_scf_gan.py:205-227,True,False,False,仅目标训练前缀；验证/测试真实
+STL加性分解,Paper-specified,PDF p6 Eq.(17),scripts/08_physics_trend_ablation.py:173-184,True,False,False,period=12是论文示例与工程选择
+STL切分边界,Engineering-stabilization,PDF未披露因果实现,scripts/08_physics_trend_ablation.py:173-184,True,True,False,先切分后仅拟合训练前缀，防止验证/测试泄漏
+Trend TimesNet,Paper-specified,PDF p6: deep TimesNet,scripts/08_physics_trend_ablation.py:198-207,True,False,False,original TimesNet
+Seasonal TimesNet,Paper-specified,PDF p6: lightweight TimesNet variant,scripts/08_physics_trend_ablation.py:198-207,False,True,False,任务预注册要求物理消融使用original TimesNet；与PDF轻量分支冲突
+Residual iTransformer,Paper-specified,PDF p6-p7,scripts/03_time_series.py:138-149,True,False,False,动态图注意力细节未披露，当前为工程近似iTransformer
+10步窗口,Paper-specified,PDF p6: dedicated 10-step sliding windows,scripts/03_time_series.py:22-47,True,False,False,窗口按DatasetID构建，不跨轨迹
+Attention Bi-LSTM输入,Paper-specified,PDF p7/p9 Table 4: 9d,scripts/04_attention_fusion.py:87-103,False,True,False,论文写预测/误差/比率；为防标签泄漏，当前用预测/增量/比率
+Attention Bi-LSTM结构,Paper-specified,PDF p9 Table 4,scripts/04_attention_fusion.py:147-215,True,False,False,"BiLSTM hidden16, 32->128->64->32->3, 3->16->1"
+融合权重损失,Paper-inferred,PDF p7 Eq.(24)未给Lweight公式,scripts/04_attention_fusion.py:218-225,False,True,False,L2集中度惩罚为工程近似
+统一训练配置,Paper-specified,"PDF p9: lr=.001,batch=32,patience=50",scripts/03_time_series.py:22-29; scripts/04_attention_fusion.py:28-39,True,False,False,总epoch与随机种子论文未完整披露
+梯度裁剪/AdamW/调度器,Engineering-stabilization,PDF未披露,scripts/03_time_series.py:152-180; scripts/04_attention_fusion.py:228-290,False,True,False,P1稳定化，不称为论文原始方法
+轻量TimesNet/OSELM/多速率/迁移,Legacy-innovation,非原论文基线,main_gmtc.py:25-40,False,False,True,独立入口完全绕过；物理实验禁用
+CNN/LSTM/Transformer比较,Paper-specified,"PDF p10 Table5,p14 Table6",baseline_compare.py,False,True,True,旧脚本仅B0018且协议不同；需新公平比较
+目标前20%小样本,Paper-specified,PDF p10 section4.2,protocol.json,False,True,False,与工程60/20/20分开，不混表
+工程60/20/20,Engineering-stabilization,本项目预注册协议,scripts/21_paper_baseline_v1.py,True,True,False,不是零标签纯跨电池
+Trend物理损失,Legacy-innovation,基线冻结后才启用,scripts/08_physics_trend_ablation.py:47-56,True,False,False,"P0 mode=none,lambda=0"

@@ -1,0 +1,22 @@
+{
+  "architecture": "original TimesNet + original TimesNet + iTransformer + Attention Bi-LSTM",
+  "epochs": 150,
+  "patience": 30,
+  "seeds": [
+    42,
+    52,
+    62,
+    72,
+    82
+  ],
+  "physics_mode": "none",
+  "lambda_phy": 0.0,
+  "lambda_weight": 0.1,
+  "fusion_stable_init": true,
+  "component_input": "HF+lagged-component",
+  "clip_recursive_state": true,
+  "split": "60/20/20",
+  "test_used_for_selection": false,
+  "git_head": "c4e644041654d03258b73deea011da97ae18056c",
+  "config_hash": "a2e9d3835c08d5e5fca3f5256933235cacb2560ce259f52cfb90cf4983547c76"
+}
