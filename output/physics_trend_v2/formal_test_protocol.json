@@ -1,0 +1,26 @@
+{
+  "created_at": "2026-08-09T20:21:00",
+  "selected_lambda": 0.1,
+  "lambda_selected_from_validation_only": true,
+  "test_results_read_during_selection": false,
+  "formal_test_seeds": [
+    42,
+    52,
+    62,
+    72,
+    82
+  ],
+  "physics_modes": [
+    "none",
+    "monotonic",
+    "smooth",
+    "both"
+  ],
+  "target_split": "60% train adaptation / 20% validation / 20% strict test",
+  "pure_zero_label_cross_battery": false,
+  "test_prediction": "recursive; no unknown target labels as lag inputs",
+  "test_tuning_or_result_based_rerun": false,
+  "frozen_elm_used": false,
+  "bootstrap_repetitions": 5000,
+  "bootstrap_seed": 20260809
+}

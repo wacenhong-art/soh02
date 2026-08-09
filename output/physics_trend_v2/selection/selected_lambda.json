@@ -1,0 +1,21 @@
+{
+  "selected_lambda": 0.1,
+  "selection_split": "validation-only",
+  "selection_seeds": [
+    42,
+    52,
+    62
+  ],
+  "batteries": [
+    "B0007",
+    "B0018"
+  ],
+  "rmse_eligibility_tolerance": 0.05,
+  "selection_order": [
+    "strict_violation_rate",
+    "tolerance_violation_rate",
+    "positive_variation",
+    "validation_rmse"
+  ],
+  "test_results_read": false
+}

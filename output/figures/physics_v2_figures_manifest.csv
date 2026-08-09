@@ -1,0 +1,5 @@
+Figure,Purpose,Source
+fig21_physics_v2_multiseed_rmse.png,four-mode RMSE distribution,"strict formal test, seeds 42/52/62/72/82"
+fig22_physics_v2_paired_rmse_delta.png,paired monotonic-original RMSE delta,"strict formal test, seeds 42/52/62/72/82"
+fig23_physics_v2_trend_consistency.png,Trend physical consistency,"strict formal test, seeds 42/52/62/72/82"
+fig24_physics_v2_prediction_iqr.png,median prediction and interquartile range,"strict formal test, seeds 42/52/62/72/82"

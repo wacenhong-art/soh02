@@ -1,0 +1,11 @@
+BatteryID,Criterion,Value,Passed
+B0007,Monotonic mean RMSE lower than Original,-76.82577881834644,True
+B0007,Monotonic improves RMSE in majority of 5 seeds,2/5,False
+B0007,Mean strict Trend violation rate lower,-0.06666666666666665,True
+B0007,Mean positive Trend variation lower,-285.72184295654296,True
+B0007,Paired block-bootstrap 95% CI below zero,"[-233.394105, 0.899699]",False
+B0018,Monotonic mean RMSE lower than Original,-4.751341207820528,True
+B0018,Monotonic improves RMSE in majority of 5 seeds,3/5,True
+B0018,Mean strict Trend violation rate lower,0.02400000000000002,False
+B0018,Mean positive Trend variation lower,0.8735824584960952,False
+B0018,Paired block-bootstrap 95% CI below zero,"[-14.765307, 0.101997]",False

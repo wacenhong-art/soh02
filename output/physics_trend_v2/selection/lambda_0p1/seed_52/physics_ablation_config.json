@@ -1,0 +1,39 @@
+{
+  "physics_modes": [
+    "monotonic"
+  ],
+  "lambda_phy": 0.1,
+  "epochs": 200,
+  "seed": 52,
+  "evaluation_split": "validation",
+  "test_accessed_for_selection": false,
+  "timesnet": "paper-deep-trend-light-seasonal",
+  "fusion": "paper-attention-bilstm",
+  "transfer_pretrain": false,
+  "oselm": false,
+  "causal_multirate": false,
+  "scf_gan_algorithm_changed": false,
+  "physics_applied_to": "STL Trend branch only",
+  "protocols": [
+    {
+      "BatteryID": "B0007",
+      "Rows": 168,
+      "TrainEnd": 100,
+      "ValidationEnd": 134,
+      "TestRows": 34,
+      "EvaluationSplit": "validation",
+      "TestLabelsUsedAsFeatures": false,
+      "Protocol": "target-first-60%-labeled-adaptation; next-20%-validation; last-20%-strict-test"
+    },
+    {
+      "BatteryID": "B0018",
+      "Rows": 128,
+      "TrainEnd": 76,
+      "ValidationEnd": 102,
+      "TestRows": 26,
+      "EvaluationSplit": "validation",
+      "TestLabelsUsedAsFeatures": false,
+      "Protocol": "target-first-60%-labeled-adaptation; next-20%-validation; last-20%-strict-test"
+    }
+  ]
+}
