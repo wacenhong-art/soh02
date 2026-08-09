@@ -1,0 +1,23 @@
+{
+  "module": "Adaptive Cross-stage Trend Anchor Calibration",
+  "parameter_selection": "validation RMSE only",
+  "candidate_windows": [
+    1,
+    3,
+    5,
+    10,
+    20
+  ],
+  "candidate_gains": [
+    0,
+    0.25,
+    0.5,
+    0.75,
+    1.0
+  ],
+  "validation_anchor": "training tail",
+  "test_anchor": "validation tail",
+  "test_labels_used_for_calibration": false,
+  "changes_trend_differences": false,
+  "selection_status": "exploratory; independent confirmation required"
+}

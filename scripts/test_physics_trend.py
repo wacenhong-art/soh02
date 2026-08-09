@@ -33,6 +33,12 @@ def test_paper_branch_shapes_and_weights():
     assert pred.shape == (4, 1)
     assert weights.shape == (4, 3)
     assert torch.allclose(weights.sum(1), torch.ones(4), atol=1e-6)
+
+
+def test_constant_anchor_preserves_trend_differences():
+    trend = torch.tensor([4.0, 3.2, 3.4, 2.9])
+    calibrated = trend + 1.75
+    assert torch.allclose(torch.diff(trend), torch.diff(calibrated))
     iprf = M.fusion.AttentionBiLSTMFusion([0, 0, 0], [1, 1, 1], 0, 1, fusion_mode="iprf")
     iprf_pred, iprf_weights = iprf(torch.randn(4, 10, 9), torch.randn(4, 3))
     assert iprf_pred.shape == (4, 1)
