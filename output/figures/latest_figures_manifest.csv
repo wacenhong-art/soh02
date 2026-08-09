@@ -1,0 +1,7 @@
+Figure,Description
+fig11_rmse_bar.png,"B0018 baselines, original G-MTC, physics G-MTC, and final module"
+fig16_physics_ablation_rmse.png,Original/monotonic/smooth/both Trend-physics ablation
+fig17_trend_violation_rate.png,Trend physical-consistency diagnostic
+fig18_frozen_residual_module_rmse.png,Frozen residual module RMSE effect
+fig19_latest_cycle_predictions.png,Per-cycle strict-test SOH fitting
+fig20_multiseed_robustness.png,Five-seed robustness diagnostic
