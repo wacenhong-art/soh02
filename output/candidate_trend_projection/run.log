@@ -1,0 +1,53 @@
+================================================================
+步骤4：修正版双注意力 Bi-LSTM 融合模型
+================================================================
+device = cpu
+训练样本=80, 验证样本=34, 测试样本=34
+训练目标均值=87.1676, 标准差=5.1894
+Epoch 0001 | train=6672.149089 | val=5054.959229 | lr=1.00e-03
+Epoch 0025 | train=3804.666829 | val=2746.011719 | lr=1.00e-03
+Epoch 0050 | train=2015.671427 | val=1460.229736 | lr=1.00e-03
+Epoch 0075 | train=576.313517 | val=396.014267 | lr=1.00e-03
+Epoch 0100 | train=1.683538 | val=1.538908 | lr=1.00e-03
+Epoch 0125 | train=0.738218 | val=0.606244 | lr=5.00e-04
+Early stopping at epoch 125
+[融合模型] 最优验证损失（标准化空间）：0.421443
+
+================================================================
+G-MTC 修正版测试集指标
+================================================================
+MAE   : 0.3403 percentage points
+MAPE  : 0.4727%
+RMSE  : 0.5249 percentage points
+R2    : 0.7647
+平均权重：Trend=1.000, Seasonal=0.000, Residual=0.000
+================================================================
+结果已保存：C:\Users\ROG\Documents\Python\soh02\output\candidate_trend_projection\B0007\projected\gmtc_pred_result.csv
+================================================================
+步骤4：修正版双注意力 Bi-LSTM 融合模型
+================================================================
+device = cpu
+训练样本=56, 验证样本=26, 测试样本=26
+训练目标均值=82.2041, 标准差=4.3725
+Epoch 0001 | train=7077.167480 | val=5421.475586 | lr=1.00e-03
+Epoch 0025 | train=5795.645508 | val=4513.467285 | lr=1.00e-03
+Epoch 0050 | train=2729.102051 | val=2116.863281 | lr=1.00e-03
+Epoch 0075 | train=900.357330 | val=637.747986 | lr=1.00e-03
+Epoch 0100 | train=29.362981 | val=12.156425 | lr=1.00e-03
+Epoch 0125 | train=5.537578 | val=0.338447 | lr=5.00e-04
+Epoch 0150 | train=2.909224 | val=0.485432 | lr=5.00e-04
+[融合模型] 最优验证损失（标准化空间）：0.289782
+
+================================================================
+G-MTC 修正版测试集指标
+================================================================
+MAE   : 1.3024 percentage points
+MAPE  : 1.8781%
+RMSE  : 1.5187 percentage points
+R2    : 0.0781
+平均权重：Trend=1.000, Seasonal=0.000, Residual=0.000
+================================================================
+结果已保存：C:\Users\ROG\Documents\Python\soh02\output\candidate_trend_projection\B0018\projected\gmtc_pred_result.csv
+BatteryID                  Module FusionMode      MAE     MAPE     RMSE       R2  MeanWeightTrend  MeanWeightSeasonal  MeanWeightResidual  TrendViolationRate
+    B0007 causal_trend_projection      paper 0.340263 0.472731 0.524925 0.764731         1.000000        6.264993e-12        1.248893e-11                 0.0
+    B0018 causal_trend_projection      paper 1.302396 1.878136 1.518689 0.078057         0.999978        1.167117e-05        1.067617e-05                 0.0

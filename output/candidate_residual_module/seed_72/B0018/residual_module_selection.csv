@@ -1,0 +1,2 @@
+validation_RMSE,hidden_nodes,ridge,forgetting_factor,update_cap_multiplier,update_error_cap,correction_clip
+0.7082710808809279,64,1.0,0.98,2.0,1.1080690337612429,4.280865979999997

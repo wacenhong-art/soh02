@@ -1,5 +1,6 @@
 import os
 import random
+import argparse
 
 import numpy as np
 import pandas as pd
@@ -81,15 +82,28 @@ def prequential(model, x, correction_target, base_pred, clip_value, update, upda
     return np.asarray(predictions), np.asarray(corrections)
 
 
+def frozen_predict(model, x, base_pred, clip_value):
+    """Strict offline inference: no true test correction is accepted by the API."""
+    correction = np.clip(model.predict(x), -clip_value, clip_value)
+    return np.asarray(base_pred) + correction, np.asarray(correction)
+
+
 def make_model(input_dim, hidden, ridge, forgetting):
     return OSELM(input_dim, hidden, ridge, forgetting, seed=SEED)
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input-dir", default=OUTPUT_PATH)
+    parser.add_argument("--output-dir", default=OUTPUT_PATH)
+    parser.add_argument("--model-name", default="G-MTC")
+    parser.add_argument("--allow-online-diagnostic", action="store_true")
+    args = parser.parse_args()
+    os.makedirs(args.output_dir, exist_ok=True)
     random.seed(SEED)
     np.random.seed(SEED)
     splits = {
-        name: pd.read_csv(os.path.join(OUTPUT_PATH, f"gmtc_pred_{name}.csv"))
+        name: pd.read_csv(os.path.join(args.input_dir, f"gmtc_pred_{name}.csv"))
         for name in ("train", "val", "test")
     }
     x_train_raw, x_val_raw, x_test_raw = [raw_features(splits[k]) for k in ("train", "val", "test")]
@@ -142,34 +156,36 @@ def main():
     )
     update_cap = cap_multiplier * history_error_scale
 
-    frozen_pred, frozen_correction = prequential(
-        final_model, x_test_final, correction["test"], base_test, final_clip, update=False,
-    )
-    online_model = make_model(x_history.shape[1], hidden, ridge, forgetting).fit(
-        x_history, correction_history
-    )
-    online_pred, online_correction = prequential(
-        online_model, x_test_final, correction["test"], base_test, final_clip,
-        update=True, update_cap=update_cap,
-    )
+    frozen_pred, frozen_correction = frozen_predict(final_model, x_test_final, base_test, final_clip)
+    evaluated = [
+        (args.model_name, base_test),
+        (args.model_name + "+ELM-frozen", frozen_pred),
+    ]
+    online_pred = online_correction = None
+    if args.allow_online_diagnostic:
+        online_model = make_model(x_history.shape[1], hidden, ridge, forgetting).fit(
+            x_history, correction_history
+        )
+        online_pred, online_correction = prequential(
+            online_model, x_test_final, correction["test"], base_test, final_clip,
+            update=True, update_cap=update_cap,
+        )
+        evaluated.append((args.model_name + "+OSELM-online-diagnostic", online_pred))
 
     rows = []
-    for name, pred in (
-        ("Light-GMTC", base_test),
-        ("Light-GMTC+ELM-frozen", frozen_pred),
-        ("Light-GMTC+OSELM-online", online_pred),
-    ):
+    for name, pred in evaluated:
         rows.append({"Model": name, **metrics(true_test, pred)})
     result = pd.DataFrame(rows)
-    result.to_csv(os.path.join(OUTPUT_PATH, "innovation_ablation_result.csv"), index=False)
+    result.to_csv(os.path.join(args.output_dir, "residual_module_ablation.csv"), index=False)
 
     detail = splits["test"][["Cycle", "True_SOH", "Pred_SOH"]].copy()
     detail = detail.rename(columns={"Pred_SOH": "Pred_Light_GMTC"})
     detail["Correction_ELM_Frozen"] = frozen_correction
     detail["Pred_ELM_Frozen"] = frozen_pred
-    detail["Correction_OSELM_Online"] = online_correction
-    detail["Pred_OSELM_Online"] = online_pred
-    detail.to_csv(os.path.join(OUTPUT_PATH, "gmtc_oselm_pred_result.csv"), index=False)
+    if online_pred is not None:
+        detail["Correction_OSELM_Online"] = online_correction
+        detail["Pred_OSELM_Online"] = online_pred
+    detail.to_csv(os.path.join(args.output_dir, "residual_module_predictions.csv"), index=False)
 
     pd.DataFrame([{
         "validation_RMSE": val_rmse,
@@ -179,17 +195,17 @@ def main():
         "update_cap_multiplier": cap_multiplier,
         "update_error_cap": update_cap,
         "correction_clip": final_clip,
-    }]).to_csv(os.path.join(OUTPUT_PATH, "oselm_selection.csv"), index=False)
+    }]).to_csv(os.path.join(args.output_dir, "residual_module_selection.csv"), index=False)
 
     print("=" * 68)
-    print("轻量G-MTC + OSELM 消融结果")
+    print("G-MTC + frozen ELM残差模块消融结果")
     print("=" * 68)
     print(
         f"验证集选择：hidden={hidden}, ridge={ridge}, forgetting={forgetting}, "
         f"update_cap={update_cap:.4f}, RMSE={val_rmse:.4f}"
     )
     print(result.round(4).to_string(index=False))
-    print("说明：online 指标采用 predict-then-update，当前标签不会参与当前预测。")
+    print("说明：主结果为frozen ELM，测试期间不接收标签且参数不更新。")
 
 
 if __name__ == "__main__":

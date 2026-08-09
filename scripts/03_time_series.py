@@ -107,63 +107,32 @@ class LightweightInceptionBlock(nn.Module):
         return F.relu(self.bn(y) + x)
 
 
-class TimesBlock(nn.Module):
-    """Published TimesNet logic: top-k FFT periods, 2D processing, adaptive merge."""
-    def __init__(self, d_model=64, top_k=3, lightweight=False):
+class TimesNet(nn.Module):
+    """Multi-period 2D model driven by the three health features."""
+    def __init__(self, input_dim=4, d_model=64, top_k=3):
         super().__init__()
         self.top_k = top_k
-        block = LightweightInceptionBlock if lightweight else InceptionBlock
-        self.inception = block(d_model)
-
-    def forward(self, x):
-        batch, length, channels = x.shape
-        spectrum = torch.fft.rfft(x, dim=1)
-        amplitude = torch.abs(spectrum).mean(dim=(0, 2))
-        amplitude = amplitude.clone()
-        amplitude[0] = 0
-        k = min(self.top_k, max(amplitude.numel() - 1, 1))
-        frequencies = torch.topk(amplitude, k).indices
-        outputs, weights = [], []
-        for frequency in frequencies:
-            frequency_value = max(int(frequency.item()), 1)
-            period = max(int(np.ceil(length / frequency_value)), 1)
-            padded_length = int(np.ceil(length / period) * period)
-            if padded_length > length:
-                padding = x.new_zeros(batch, padded_length - length, channels)
-                series = torch.cat([x, padding], dim=1)
-            else:
-                series = x
-            image = series.reshape(batch, padded_length // period, period, channels).permute(0, 3, 1, 2)
-            restored = self.inception(image).permute(0, 2, 3, 1).reshape(batch, padded_length, channels)
-            outputs.append(restored[:, :length])
-            weights.append(amplitude[frequency])
-        stacked = torch.stack(outputs, dim=-1)
-        mixing = torch.softmax(torch.stack(weights), dim=0).view(1, 1, 1, -1)
-        return x + torch.sum(stacked * mixing, dim=-1)
-
-
-class TimesNet(nn.Module):
-    """Deep TimesNet used by the paper's long-term Trend branch."""
-    def __init__(self, input_dim=4, d_model=64, top_k=3, layers=2, lightweight=False):
-        super().__init__()
         self.input_proj = nn.Linear(input_dim, d_model)
-        self.blocks = nn.ModuleList([
-            TimesBlock(d_model, top_k, lightweight=lightweight) for _ in range(layers)
-        ])
-        self.norms = nn.ModuleList([nn.LayerNorm(d_model) for _ in range(layers)])
+        self.inception = InceptionBlock(d_model)
         self.output = nn.Linear(d_model, 1)
 
     def forward(self, x):
         h = self.input_proj(x)
-        for block, norm in zip(self.blocks, self.norms):
-            h = norm(block(h))
-        return self.output(h[:, -1])
+        amp = torch.abs(torch.fft.rfft(h, dim=1)).mean((0, 2))
+        k = min(self.top_k, max(len(amp) - 1, 1))
+        freq = torch.topk(amp[1:], k).indices[0] + 1
+        period = max(int(x.shape[1] // int(freq)), 2)
+        usable = (x.shape[1] // period) * period
+        h2 = h[:, :usable].reshape(x.shape[0], usable // period, period, h.shape[-1]).permute(0, 3, 1, 2)
+        h2 = self.inception(h2)
+        return self.output(h2.mean(dim=(2, 3)))
 
 
 class LightweightTimesNet(TimesNet):
-    """Paper Seasonal branch: adaptive-period TimesNet with separable convolutions."""
+    """TimesNet retaining FFT period discovery with separable 2D convolutions."""
     def __init__(self, input_dim=4, d_model=64, top_k=3):
-        super().__init__(input_dim=input_dim, d_model=d_model, top_k=top_k, layers=1, lightweight=True)
+        super().__init__(input_dim=input_dim, d_model=d_model, top_k=top_k)
+        self.inception = LightweightInceptionBlock(d_model)
 
 
 class iTransformer(nn.Module):
@@ -270,9 +239,9 @@ def pretrain_on_source_batteries():
 def main():
     set_seed()
     print("=" * 60)
-    variant = os.getenv("TIMESNET_VARIANT", "paper").strip().lower()
-    if variant not in {"paper", "original", "light"}:
-        raise ValueError("TIMESNET_VARIANT 仅支持 paper、original 或 light")
+    variant = os.getenv("TIMESNET_VARIANT", "light").strip().lower()
+    if variant not in {"original", "light"}:
+        raise ValueError("TIMESNET_VARIANT 仅支持 original 或 light")
     print("步骤3：真实B0018 STL分解 + 增强HF驱动的三分量预测")
     print(f"TimesNet变体：{variant}")
     print("=" * 60)
@@ -342,10 +311,7 @@ def main():
         if name == "Residual":
             model = iTransformer().to(device)
         else:
-            if variant == "paper":
-                model = (TimesNet() if name == "Trend" else LightweightTimesNet()).to(device)
-            else:
-                model = (LightweightTimesNet() if variant == "light" else TimesNet()).to(device)
+            model = (LightweightTimesNet() if variant == "light" else TimesNet()).to(device)
             if transfer_state is not None and variant == "light" and name in transfer_components:
                 missing, unexpected = model.load_state_dict(transfer_state, strict=False)
                 if unexpected:
