@@ -1,0 +1,5 @@
+﻿FigureStem,Archetype,CoreConclusion,Formats
+fig1_framework_energy_v2,Schematic-led composite,Frozen G-MTC backbone and two isolated intervention locations,png;pdf;svg;tiff
+fig2_baseline_energy_v2,Quantitative grid,Auditable baseline does not reproduce the paper value and CNN is best in the current comparison,png;pdf;svg;tiff
+fig3_physics_energy_v2,Quantitative grid,Trend constraints produce battery- and seed-dependent trade-offs,png;pdf;svg;tiff
+fig4_outer_validation_energy_v2,Quantitative grid,CILA fails joint outer-battery confirmation and cannot repair recursive branch failure,png;pdf;svg;tiff
