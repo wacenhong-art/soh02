@@ -1,0 +1,20 @@
+{
+  "architecture": "STL -> original TimesNet + lightweight TimesNet + iTransformer -> Attention Bi-LSTM",
+  "protocol": "target first 20%; DatasetID 0-4 train; DatasetID 5 synthetic validation; remaining raw cycles development evaluation",
+  "inference": "direct observed-HF windows; no recursive component or SOH feedback",
+  "test_status": "already-contacted development evaluation, not confirmatory",
+  "battery": "B0034",
+  "seed": 42,
+  "width": 16,
+  "epochs": 150,
+  "patience": 30,
+  "train_end_exclusive": 37,
+  "physics_mode": "none",
+  "lambda_phy": 0,
+  "transfer": false,
+  "oselm": false,
+  "component_guard": "none",
+  "component_guard_definition": "Seasonal/Residual clipped to first-20% STL range plus 5% margin",
+  "fusion_mode": "iprf",
+  "config_sha256": "f3f438ec775bd6b3d8d01fdfb472f3be15d90e9c8aa0f19c03135638a2866559"
+}

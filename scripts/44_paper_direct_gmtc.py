@@ -24,6 +24,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from statsmodels.tsa.seasonal import STL
 from torch.utils.data import DataLoader
@@ -65,8 +66,28 @@ def windows(x: np.ndarray, y: np.ndarray):
     return np.asarray(xs, np.float32), np.asarray(ys, np.float32), np.asarray(cycles, int)
 
 
-def component_model(name: str, width: int):
+class AnchoredTrendTimesNet(nn.Module):
+    """Original TimesNet learns a bounded residual around a linear Trend anchor."""
+
+    def __init__(self, coefficient, intercept, width: int, residual_bound: float = 0.5):
+        super().__init__()
+        self.backbone = ts.TimesNet(input_dim=3, d_model=width, top_k=3)
+        self.register_buffer("anchor_coefficient", torch.as_tensor(coefficient, dtype=torch.float32))
+        self.register_buffer("anchor_intercept", torch.tensor(float(intercept), dtype=torch.float32))
+        self.residual_bound = float(residual_bound)
+
+    def forward(self, x):
+        anchor = x[:, -1, :] @ self.anchor_coefficient + self.anchor_intercept
+        residual = self.residual_bound * torch.tanh(self.backbone(x).reshape(-1))
+        return (anchor + residual).unsqueeze(-1)
+
+
+def component_model(name: str, width: int, trend_anchor=None):
     if name == "Trend":
+        if trend_anchor is not None:
+            return AnchoredTrendTimesNet(
+                trend_anchor.coef_, trend_anchor.intercept_, width=width
+            ).to(DEVICE)
         return ts.TimesNet(input_dim=3, d_model=width, top_k=3).to(DEVICE)
     if name == "Seasonal":
         return ts.LightweightTimesNet(input_dim=3, d_model=width, top_k=3).to(DEVICE)
@@ -133,14 +154,29 @@ def metrics(truth, prediction):
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--battery", choices=["B0007", "B0018"], default="B0018")
+    parser.add_argument("--battery", default="B0018")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--epochs", type=int, default=150)
     parser.add_argument("--patience", type=int, default=30)
     parser.add_argument("--width", type=int, choices=[16, 32, 64], default=16)
+    parser.add_argument(
+        "--component-guard", choices=["none", "seasonal_residual"], default="none"
+    )
+    parser.add_argument("--fusion-mode", choices=["paper", "iprf"], default="paper")
+    parser.add_argument(
+        "--trend-anchor",
+        choices=["none", "ridge_residual", "soh_ridge_residual"],
+        default="none",
+    )
     args = parser.parse_args()
     set_seed(args.seed)
-    run_dir = OUT / args.battery / f"seed_{args.seed}" / f"width_{args.width}"
+    if args.battery in {"B0005", "B0006"}:
+        raise ValueError("source batteries B0005/B0006 cannot be target batteries")
+    run_dir = (
+        OUT / args.battery / f"seed_{args.seed}" / f"width_{args.width}"
+        / f"guard_{args.component_guard}" / f"anchor_{args.trend_anchor}"
+        / f"fusion_{args.fusion_mode}"
+    )
     run_dir.mkdir(parents=True, exist_ok=True)
 
     raw = pd.read_csv(ROOT / "data" / "hf_csv" / f"{args.battery}_hf.csv").dropna().reset_index(drop=True)
@@ -190,18 +226,37 @@ def main() -> None:
             xw, yw, _ = windows(group_inputs[dataset_id][1], target_z)
             train_x.append(xw); train_y.append(yw)
         val_x, val_y, _ = windows(group_inputs[5][1], target_z)
-        model = component_model(name, args.width)
+        trend_anchor = None
+        if name == "Trend" and args.trend_anchor in {"ridge_residual", "soh_ridge_residual"}:
+            # Fit only on the untouched real target prefix (DatasetID=0).
+            # Synthetic trajectories remain training augmentation for the
+            # TimesNet residual but cannot alter the long-term linear anchor.
+            anchor_target = target_z
+            if args.trend_anchor == "soh_ridge_residual":
+                anchor_target = (soh_prefix - target_mean) / target_std
+            anchor_x, anchor_y, _ = windows(group_inputs[0][1], anchor_target)
+            trend_anchor = Ridge(alpha=0.1).fit(anchor_x[:, -1, :], anchor_y)
+        model = component_model(name, args.width, trend_anchor=trend_anchor)
         model, log, best, best_epoch = train_component(
             model, (np.concatenate(train_x), np.concatenate(train_y)),
             (val_x, val_y), run_dir / f"{name.lower()}.pth", args.epochs, args.patience,
         )
         log.to_csv(run_dir / f"{name.lower()}_training_log.csv", index=False, encoding="utf-8-sig")
         component_diagnostics.append({"Component": name, "BestValidationLoss": best, "BestEpoch": best_epoch})
+        lower = float(values.min())
+        upper = float(values.max())
+        margin = 0.05 * max(upper - lower, 1e-6)
+
+        def guarded(prediction: np.ndarray) -> np.ndarray:
+            if args.component_guard == "seasonal_residual" and name in {"Seasonal", "Residual"}:
+                return np.clip(prediction, lower - margin, upper + margin)
+            return prediction
+
         for dataset_id in ids:
-            component_predictions[dataset_id][name] = infer_component(
+            component_predictions[dataset_id][name] = guarded(infer_component(
                 model, group_inputs[dataset_id][1], target_mean, target_std
-            )
-        raw_predictions[name] = infer_component(model, raw_x, target_mean, target_std)
+            ))
+        raw_predictions[name] = guarded(infer_component(model, raw_x, target_mean, target_std))
 
     def trajectory_frame(dataset_id: int) -> pd.DataFrame:
         group = group_inputs[dataset_id][0]
@@ -236,7 +291,7 @@ def main() -> None:
     val_loader = DataLoader(fusion.FusionDataset(*val_arrays), min(32, len(val_arrays[0])), shuffle=False)
     fusion.LAMBDA_WEIGHT = 0.01
     fusion_model = fusion.AttentionBiLSTMFusion(
-        comp_mean, comp_std, y_mean, y_std, fusion_mode="paper", stable_init=True
+        comp_mean, comp_std, y_mean, y_std, fusion_mode=args.fusion_mode, stable_init=True
     ).to(DEVICE)
     fusion_model = fusion.train_model(
         fusion_model, train_loader, val_loader, run_dir / "attention_bilstm.pth",
@@ -288,6 +343,11 @@ def main() -> None:
         "battery": args.battery, "seed": args.seed, "width": args.width,
         "epochs": args.epochs, "patience": args.patience, "train_end_exclusive": train_end,
         "physics_mode": "none", "lambda_phy": 0, "transfer": False, "oselm": False,
+        "component_guard": args.component_guard,
+        "component_guard_definition": "Seasonal/Residual clipped to first-20% STL range plus 5% margin",
+        "fusion_mode": args.fusion_mode,
+        "trend_anchor": args.trend_anchor,
+        "trend_anchor_definition": "Ridge(alpha=0.1) on DatasetID=0 first-20% Trend or SOH scale; original TimesNet learns bounded Trend residual",
     }
     canonical = json.dumps(config, ensure_ascii=False, sort_keys=True).encode("utf-8")
     config["config_sha256"] = hashlib.sha256(canonical).hexdigest()

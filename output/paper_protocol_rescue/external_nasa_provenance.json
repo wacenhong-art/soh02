@@ -1,0 +1,26 @@
+{
+  "source_archive": "C:\\Users\\ROG\\Documents\\5.+Battery+Data+Set\\5. Battery Data Set\\3. BatteryAgingARC_25-44.zip",
+  "source_archive_sha256": "da983014699f3cc8d6a431863ef83957c838ac62e3d391b9f383b04c2e6a53bb",
+  "source_access": "read-only",
+  "extractor": "scripts/01_extract_hf.py",
+  "batteries": [
+    {
+      "BatteryID": "B0034",
+      "Rows": 187,
+      "FirstSOH": 0.810364644638787,
+      "LastSOH": 0.6401300802981668,
+      "DerivedCSV": "data\\hf_csv\\B0034_hf.csv",
+      "MatEntry": "B0034.mat",
+      "MatEntrySHA256": "d8cd5faff49f0d5672736327c5cd16913e0a0f08fb2817f672f52a67184cb885"
+    },
+    {
+      "BatteryID": "B0036",
+      "Rows": 156,
+      "FirstSOH": 0.889647356289013,
+      "LastSOH": 0.7795564715770588,
+      "DerivedCSV": "data\\hf_csv\\B0036_hf.csv",
+      "MatEntry": "B0036.mat",
+      "MatEntrySHA256": "40511cccf0262d61b8345fdfe6c4e0a67ccc42e7f5e869ec32c7f33619e7dc15"
+    }
+  ]
+}
