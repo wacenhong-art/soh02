@@ -43,3 +43,16 @@ After the shared pooled standardization, without any training:
 - domains per balanced batch: `2`
 
 The repaired mechanism is numerically active but has not yet passed a training smoke test.
+
+## C01 Scaled-CORAL Training Smoke
+
+The two-epoch repaired run completed:
+
+| Battery | Original RMSE | Scaled CORAL RMSE | CORAL - Original |
+|---|---:|---:|---:|
+| B0007 | 0.430554 | 0.430597 | +0.000043 |
+| B0018 | 1.368553 | 1.368634 | +0.000081 |
+
+Raw CORAL stayed near `0.053-0.058`; its weighted contribution stayed near `0.00053-0.00058`. The mechanism is active, but the two-epoch accuracy change is slightly negative and too small to interpret.
+
+Post-run compliance audit found that these implementation smokes inherited `lambda_weight=0.01` from the module default, while frozen P1 uses `0.1`. All smoke results remain preserved but are excluded from official accuracy comparison. Attempt C02 makes `lambda_weight` an explicit hashed argument fixed to `0.1`; the next pooled-Original and CILA runs will share it.

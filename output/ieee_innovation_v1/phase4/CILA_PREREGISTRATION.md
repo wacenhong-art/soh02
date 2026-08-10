@@ -36,6 +36,7 @@
 - `lambda_align`: `0`, `0.001`, `0.01`, `0.1`; default `0.01`
 - seeds: `42, 52, 62, 72, 82`
 - architecture, epoch budget, patience, learning rate, weight decay and `lambda_weight`: frozen baseline values
+- official runs must pass `--lambda-weight 0.1`; earlier 2-epoch implementation smokes used the module default 0.01 and are excluded from accuracy comparison
 - selection: development validation RMSE only; no outer-test label or curve may influence selection
 
 ## Gates

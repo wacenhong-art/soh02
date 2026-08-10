@@ -75,5 +75,10 @@
   "formal_validation_started": false,
   "cila_scaled_unit_gate": "PASS",
   "cila_scaled_initial_contribution_ratio": 0.019344512570418287,
-  "status": "waiting_scaled_cila_smoke_command_confirmation"
+  "cila_scaled_smoke_completed": true,
+  "cila_scaled_smoke_accuracy_supported": false,
+  "cila_official_lambda_weight": 0.1,
+  "cila_locked_seed42_data_gate": "PASS",
+  "cila_locked_seed42_initial_contribution_ratio": 0.007828583879474185,
+  "status": "waiting_cila_one_seed_validation_command_confirmation"
 }

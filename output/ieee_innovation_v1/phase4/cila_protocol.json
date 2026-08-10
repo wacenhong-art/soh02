@@ -8,6 +8,7 @@
   "modes": ["none", "coral"],
   "lambda_align_values": [0.0, 0.001, 0.01, 0.1],
   "lambda_align_default": 0.01,
+  "lambda_weight_locked": 0.1,
   "seeds": [42, 52, 62, 72, 82],
   "scf_gan_sources": ["B0005", "B0006"],
   "development_domains": ["B0007", "B0018"],
@@ -23,5 +24,7 @@
   "full_pinn_added": false,
   "user_confirmed": true,
   "smoke_raw_coral_scale_gate": "FAILED_INACTIVE",
-  "formal_validation_started": false
+  "formal_validation_started": false,
+  "smoke_lambda_weight": 0.01,
+  "official_smoke_excluded_from_accuracy_comparison": true
 }

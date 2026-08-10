@@ -311,10 +311,11 @@ def run(args):
         raise ValueError(f"mode/lambda must be {sorted(ALLOWED_MODES)} / {sorted(ALLOWED_LAMBDAS)}")
     if mode == "none" and lambda_align != 0:
         raise ValueError("none mode requires lambda_align=0")
+    fusion.LAMBDA_WEIGHT=float(args.lambda_weight)
     domains=parse_domains(args.domain); output_dir=Path(args.output_dir).resolve(); output_dir.mkdir(parents=True,exist_ok=True)
     fusion.set_seed(args.seed); started=time.time(); data=build_pooled_data(domains,args.evaluate_test)
     model=fusion.AttentionBiLSTMFusion(data.comp_mean,data.comp_std,data.y_mean,data.y_std,fusion_mode="paper",stable_init=args.stable_init).to(fusion.device)
-    config={"mode":mode,"lambda_align":lambda_align,"seed":args.seed,"epochs":args.epochs,"patience":args.patience,
+    config={"mode":mode,"lambda_align":lambda_align,"lambda_weight":fusion.LAMBDA_WEIGHT,"seed":args.seed,"epochs":args.epochs,"patience":args.patience,
             "domains":{k:str(v) for k,v in domains.items()},"input_sha256":{f"{k}/{s}":sha256_file(v/f"comp_pred_{s}.csv") for k,v in domains.items() for s in (["train","val","test"] if args.evaluate_test else ["train","val"])},
             "architecture":"unchanged AttentionBiLSTMFusion paper mode","alignment":"pairwise CORAL on pooled-standardized existing temporal context",
             "evaluate_test":args.evaluate_test,"validate_only":args.validate_only,"stable_init":args.stable_init}
@@ -358,6 +359,7 @@ def main():
     parser.add_argument("--domain",action="append",required=True,help="BatteryID=directory containing comp_pred_train/val[/test].csv")
     parser.add_argument("--output-dir",required=True); parser.add_argument("--mode",choices=sorted(ALLOWED_MODES),default="none")
     parser.add_argument("--lambda-align",type=float,default=0.0); parser.add_argument("--seed",type=int,default=42)
+    parser.add_argument("--lambda-weight",type=float,default=0.1,help="Frozen P1 fusion weight regularization coefficient")
     parser.add_argument("--epochs",type=int,default=150); parser.add_argument("--patience",type=int,default=30)
     parser.add_argument("--stable-init",action="store_true"); parser.add_argument("--evaluate-test",action="store_true")
     parser.add_argument("--validate-only",action="store_true",help="load, audit and shape-check domains without training")
