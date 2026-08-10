@@ -1,0 +1,3 @@
+﻿Epoch,TrainLoss,ValidationLoss,PhysicsLoss,MonotonicPenalty,SmoothPenalty,PhysicsMode,LambdaPhy
+1,6.381640625,5.795478820800781,0.0,0.0,0.0,none,0.0
+2,4.758720350265503,3.806781053543091,0.0,0.0,0.0,none,0.0

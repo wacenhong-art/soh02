@@ -1,26 +1,12 @@
 {
-  "selected_lambda_phy": 0.1,
-  "selection_split": "validation",
-  "selection_seed": 42,
-  "selection_rule": "lowest cross-battery validation RMSE among physics modes with improved Trend consistency",
-  "modes": [
-    "none",
-    "monotonic",
-    "smooth",
-    "both"
-  ],
-  "seeds": [
-    42,
-    52,
-    62,
-    72,
-    82
-  ],
-  "baseline_config_hash": "c9b526cab0f080aaf480c10798ca8c234d022b34e566d9ba2b6ba3e0748b670a",
-  "test_used_for_selection": false,
-  "architecture_changes": "Trend loss only",
-  "lambda_weight": 0.1,
-  "fusion_stable_init": true,
-  "clip_recursive_state": true,
-  "config_hash": "48bed50c845b92e9c48608d9956da0fa98e9679526dae37091dd94f9f7048590"
+  "selected_on": "B0034 development evaluation",
+  "selected_physics_mode": "both",
+  "selected_lambda_phy": 0.001,
+  "architecture": "SOH-scale trainable Ridge anchor + original TimesNet residual; Seasonal lightweight TimesNet; Residual iTransformer; bounded Attention Bi-LSTM fusion",
+  "component_guard": "Seasonal/Residual first-prefix range plus 5%",
+  "physics_scope": "STL Trend only",
+  "trajectory_rule": "same BatteryID/DatasetID with continuous Cycle only",
+  "test_tuning": false,
+  "confirmation_status": "failed on contacted B0018; B0034/B0036 bootstrap intervals cross zero",
+  "config_sha256": "9b6be742d86a2dba2dac8e9f2042060977267840747dc9df7eccad4b6f5d3bb9"
 }

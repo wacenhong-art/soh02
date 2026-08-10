@@ -69,11 +69,21 @@ def windows(x: np.ndarray, y: np.ndarray):
 class AnchoredTrendTimesNet(nn.Module):
     """Original TimesNet learns a bounded residual around a linear Trend anchor."""
 
-    def __init__(self, coefficient, intercept, width: int, residual_bound: float = 0.5):
+    def __init__(
+        self, coefficient, intercept, width: int, residual_bound: float = 0.5,
+        trainable_anchor: bool = False,
+    ):
         super().__init__()
         self.backbone = ts.TimesNet(input_dim=3, d_model=width, top_k=3)
-        self.register_buffer("anchor_coefficient", torch.as_tensor(coefficient, dtype=torch.float32))
-        self.register_buffer("anchor_intercept", torch.tensor(float(intercept), dtype=torch.float32))
+        coefficient_tensor = torch.as_tensor(coefficient, dtype=torch.float32)
+        intercept_tensor = torch.tensor(float(intercept), dtype=torch.float32)
+        if trainable_anchor:
+            self.anchor_coefficient = nn.Parameter(coefficient_tensor)
+            self.anchor_intercept = nn.Parameter(intercept_tensor)
+        else:
+            self.register_buffer("anchor_coefficient", coefficient_tensor)
+            self.register_buffer("anchor_intercept", intercept_tensor)
+        self.trainable_anchor = bool(trainable_anchor)
         self.residual_bound = float(residual_bound)
 
     def forward(self, x):
@@ -82,11 +92,12 @@ class AnchoredTrendTimesNet(nn.Module):
         return (anchor + residual).unsqueeze(-1)
 
 
-def component_model(name: str, width: int, trend_anchor=None):
+def component_model(name: str, width: int, trend_anchor=None, trainable_anchor: bool = False):
     if name == "Trend":
         if trend_anchor is not None:
             return AnchoredTrendTimesNet(
-                trend_anchor.coef_, trend_anchor.intercept_, width=width
+                trend_anchor.coef_, trend_anchor.intercept_, width=width,
+                trainable_anchor=trainable_anchor,
             ).to(DEVICE)
         return ts.TimesNet(input_dim=3, d_model=width, top_k=3).to(DEVICE)
     if name == "Seasonal":
@@ -94,25 +105,84 @@ def component_model(name: str, width: int, trend_anchor=None):
     return ts.iTransformer(seq_len=SEQ_LEN, d_model=width, nhead=4, layers=1).to(DEVICE)
 
 
-def train_component(model, train_arrays, val_arrays, checkpoint: Path, epochs: int, patience: int):
+def trend_physics_terms(prediction: torch.Tensor, mode: str):
+    """Trajectory-local Trend penalties; prediction must be cycle ordered."""
+    values = prediction.reshape(-1)
+    zero = values.new_tensor(0.0)
+    delta = values[1:] - values[:-1]
+    monotonic = torch.relu(delta).mean() if len(delta) else zero
+    second = values[2:] - 2.0 * values[1:-1] + values[:-2]
+    smooth = second.square().mean() if len(second) else zero
+    if mode == "none":
+        selected = zero
+    elif mode == "monotonic":
+        selected = monotonic
+    elif mode == "smooth":
+        selected = smooth
+    elif mode == "both":
+        selected = monotonic + smooth
+    else:
+        raise ValueError(f"unsupported physics mode: {mode}")
+    return selected, monotonic, smooth
+
+
+def train_component(
+    model,
+    train_arrays,
+    val_arrays,
+    checkpoint: Path,
+    epochs: int,
+    patience: int,
+    ordered_trajectories=None,
+    physics_mode: str = "none",
+    lambda_phy: float = 0.0,
+):
     train_loader = DataLoader(ts.TSDataset(*train_arrays), 32, shuffle=True)
     val_loader = DataLoader(ts.TSDataset(*val_arrays), 32, shuffle=False)
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=1e-5)
     criterion = nn.MSELoss()
     best, wait, best_epoch, rows = float("inf"), 0, 0, []
     for epoch in range(1, epochs + 1):
-        model.train(); train_losses = []
-        for xb, yb in train_loader:
+        model.train(); train_losses = []; physics_value = mono_value = smooth_value = 0.0
+        if ordered_trajectories is not None:
             optimizer.zero_grad()
-            loss = criterion(model(xb.to(DEVICE)), yb.to(DEVICE))
+            prediction_losses, selected_terms, mono_terms, smooth_terms = [], [], [], []
+            for trajectory_x, trajectory_y in ordered_trajectories:
+                xb = torch.as_tensor(trajectory_x, dtype=torch.float32, device=DEVICE)
+                yb = torch.as_tensor(trajectory_y, dtype=torch.float32, device=DEVICE).unsqueeze(-1)
+                prediction = model(xb)
+                prediction_losses.append(criterion(prediction, yb))
+                selected, monotonic, smooth = trend_physics_terms(prediction, physics_mode)
+                selected_terms.append(selected); mono_terms.append(monotonic); smooth_terms.append(smooth)
+            prediction_loss = torch.stack(prediction_losses).mean()
+            physics_loss = torch.stack(selected_terms).mean()
+            loss = prediction_loss + float(lambda_phy) * physics_loss
             loss.backward(); nn.utils.clip_grad_norm_(model.parameters(), 1.0); optimizer.step()
             train_losses.append(float(loss.item()))
+            physics_value = float(physics_loss.detach().item())
+            mono_value = float(torch.stack(mono_terms).mean().detach().item())
+            smooth_value = float(torch.stack(smooth_terms).mean().detach().item())
+        else:
+            for xb, yb in train_loader:
+                optimizer.zero_grad()
+                loss = criterion(model(xb.to(DEVICE)), yb.to(DEVICE))
+                loss.backward(); nn.utils.clip_grad_norm_(model.parameters(), 1.0); optimizer.step()
+                train_losses.append(float(loss.item()))
         model.eval(); val_losses = []
         with torch.no_grad():
             for xb, yb in val_loader:
                 val_losses.append(float(criterion(model(xb.to(DEVICE)), yb.to(DEVICE)).item()))
         train_loss, val_loss = float(np.mean(train_losses)), float(np.mean(val_losses))
-        rows.append({"Epoch": epoch, "TrainLoss": train_loss, "ValidationLoss": val_loss})
+        rows.append({
+            "Epoch": epoch,
+            "TrainLoss": train_loss,
+            "ValidationLoss": val_loss,
+            "PhysicsLoss": physics_value,
+            "MonotonicPenalty": mono_value,
+            "SmoothPenalty": smooth_value,
+            "PhysicsMode": physics_mode,
+            "LambdaPhy": float(lambda_phy),
+        })
         if val_loss < best - 1e-7:
             best, best_epoch, wait = val_loss, epoch, 0
             torch.save(model.state_dict(), checkpoint)
@@ -165,8 +235,15 @@ def main() -> None:
     parser.add_argument("--fusion-mode", choices=["paper", "iprf"], default="paper")
     parser.add_argument(
         "--trend-anchor",
-        choices=["none", "ridge_residual", "soh_ridge_residual"],
+        choices=["none", "ridge_residual", "soh_ridge_residual", "soh_ridge_trainable_residual"],
         default="none",
+    )
+    parser.add_argument(
+        "--physics-mode", choices=["none", "monotonic", "smooth", "both"], default="none"
+    )
+    parser.add_argument("--lambda-phy", type=float, choices=[0.0, 0.001, 0.01, 0.1], default=0.01)
+    parser.add_argument(
+        "--trend-projection", choices=["none", "soft_cummin_025", "cummin"], default="none"
     )
     args = parser.parse_args()
     set_seed(args.seed)
@@ -176,6 +253,8 @@ def main() -> None:
         OUT / args.battery / f"seed_{args.seed}" / f"width_{args.width}"
         / f"guard_{args.component_guard}" / f"anchor_{args.trend_anchor}"
         / f"fusion_{args.fusion_mode}"
+        / f"physics_{args.physics_mode}_lambda_{args.lambda_phy:g}"
+        / f"projection_{args.trend_projection}"
     )
     run_dir.mkdir(parents=True, exist_ok=True)
 
@@ -227,27 +306,50 @@ def main() -> None:
             train_x.append(xw); train_y.append(yw)
         val_x, val_y, _ = windows(group_inputs[5][1], target_z)
         trend_anchor = None
-        if name == "Trend" and args.trend_anchor in {"ridge_residual", "soh_ridge_residual"}:
+        if name == "Trend" and args.trend_anchor in {
+            "ridge_residual", "soh_ridge_residual", "soh_ridge_trainable_residual"
+        }:
             # Fit only on the untouched real target prefix (DatasetID=0).
             # Synthetic trajectories remain training augmentation for the
             # TimesNet residual but cannot alter the long-term linear anchor.
             anchor_target = target_z
-            if args.trend_anchor == "soh_ridge_residual":
+            if args.trend_anchor in {"soh_ridge_residual", "soh_ridge_trainable_residual"}:
                 anchor_target = (soh_prefix - target_mean) / target_std
             anchor_x, anchor_y, _ = windows(group_inputs[0][1], anchor_target)
             trend_anchor = Ridge(alpha=0.1).fit(anchor_x[:, -1, :], anchor_y)
-        model = component_model(name, args.width, trend_anchor=trend_anchor)
+        model = component_model(
+            name, args.width, trend_anchor=trend_anchor,
+            trainable_anchor=args.trend_anchor == "soh_ridge_trainable_residual",
+        )
+        effective_lambda = 0.0 if args.physics_mode == "none" else float(args.lambda_phy)
         model, log, best, best_epoch = train_component(
             model, (np.concatenate(train_x), np.concatenate(train_y)),
             (val_x, val_y), run_dir / f"{name.lower()}.pth", args.epochs, args.patience,
+            ordered_trajectories=list(zip(train_x, train_y)) if name == "Trend" else None,
+            physics_mode=args.physics_mode if name == "Trend" else "none",
+            lambda_phy=effective_lambda if name == "Trend" else 0.0,
         )
         log.to_csv(run_dir / f"{name.lower()}_training_log.csv", index=False, encoding="utf-8-sig")
-        component_diagnostics.append({"Component": name, "BestValidationLoss": best, "BestEpoch": best_epoch})
+        component_diagnostics.append({
+            "Component": name,
+            "BestValidationLoss": best,
+            "BestEpoch": best_epoch,
+            "PhysicsMode": args.physics_mode if name == "Trend" else "none",
+            "LambdaPhy": effective_lambda if name == "Trend" else 0.0,
+        })
         lower = float(values.min())
         upper = float(values.max())
         margin = 0.05 * max(upper - lower, 1e-6)
 
         def guarded(prediction: np.ndarray) -> np.ndarray:
+            if name == "Trend" and args.trend_projection == "cummin":
+                return np.minimum.accumulate(prediction)
+            if name == "Trend" and args.trend_projection == "soft_cummin_025":
+                projected = np.asarray(prediction, dtype=float).copy()
+                for cycle_index in range(1, len(projected)):
+                    positive_step = max(projected[cycle_index] - projected[cycle_index - 1], 0.0)
+                    projected[cycle_index] -= 0.25 * positive_step
+                return projected
             if args.component_guard == "seasonal_residual" and name in {"Seasonal", "Residual"}:
                 return np.clip(prediction, lower - margin, upper + margin)
             return prediction
@@ -332,7 +434,22 @@ def main() -> None:
         "w_Trend": weights[:, 0], "w_Seasonal": weights[:, 1], "w_Residual": weights[:, 2],
     })
     result.to_csv(run_dir / "per_cycle_predictions.csv", index=False, encoding="utf-8-sig")
-    row = {"BatteryID": args.battery, "Seed": args.seed, "Width": args.width, **metrics(truth, prediction)}
+    trend_values = result["PredTrend"].to_numpy(float)
+    trend_delta = np.diff(trend_values)
+    trend_second = np.diff(trend_values, n=2)
+    positive = np.maximum(trend_delta, 0.0)
+    row = {
+        "BatteryID": args.battery,
+        "Seed": args.seed,
+        "Width": args.width,
+        "PhysicsMode": args.physics_mode,
+        "LambdaPhy": effective_lambda,
+        **metrics(truth, prediction),
+        "TrendViolationRate": float(np.mean(trend_delta > 0)) if len(trend_delta) else 0.0,
+        "TrendMeanPositiveJump": float(positive.mean()) if len(positive) else 0.0,
+        "TrendMaxPositiveJump": float(positive.max()) if len(positive) else 0.0,
+        "TrendMeanAbsSecondDifference": float(np.mean(np.abs(trend_second))) if len(trend_second) else 0.0,
+    }
     pd.DataFrame([row]).to_csv(run_dir / "metrics.csv", index=False, encoding="utf-8-sig")
     pd.DataFrame(component_diagnostics).to_csv(run_dir / "component_diagnostics.csv", index=False, encoding="utf-8-sig")
     config = {
@@ -342,12 +459,20 @@ def main() -> None:
         "test_status": "already-contacted development evaluation, not confirmatory",
         "battery": args.battery, "seed": args.seed, "width": args.width,
         "epochs": args.epochs, "patience": args.patience, "train_end_exclusive": train_end,
-        "physics_mode": "none", "lambda_phy": 0, "transfer": False, "oselm": False,
+        "physics_mode": args.physics_mode,
+        "lambda_phy": effective_lambda,
+        "physics_applied_to": "STL Trend prediction only",
+        "physics_adjacency": "within each continuous DatasetID trajectory; never shuffled batch adjacency",
+        "monotonic_penalty": "mean(ReLU(T[t+1]-T[t]))",
+        "smooth_penalty": "mean((T[t+1]-2*T[t]+T[t-1])^2)",
+        "trend_projection": args.trend_projection,
+        "trend_projection_definition": "none, causal 25% attenuation of positive Trend steps, or causal cumulative minimum; final SOH remains unconstrained",
+        "transfer": False, "oselm": False,
         "component_guard": args.component_guard,
         "component_guard_definition": "Seasonal/Residual clipped to first-20% STL range plus 5% margin",
         "fusion_mode": args.fusion_mode,
         "trend_anchor": args.trend_anchor,
-        "trend_anchor_definition": "Ridge(alpha=0.1) on DatasetID=0 first-20% Trend or SOH scale; original TimesNet learns bounded Trend residual",
+        "trend_anchor_definition": "Ridge(alpha=0.1) on DatasetID=0 first-20% Trend or SOH scale; original TimesNet learns bounded Trend residual; trainable variant exposes anchor to L_total gradients",
     }
     canonical = json.dumps(config, ensure_ascii=False, sort_keys=True).encode("utf-8")
     config["config_sha256"] = hashlib.sha256(canonical).hexdigest()

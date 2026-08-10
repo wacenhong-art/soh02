@@ -1,0 +1,4 @@
+﻿Component,BestValidationLoss,BestEpoch,PhysicsMode,LambdaPhy
+Trend,1.7028958797454834,1,both,0.01
+Seasonal,3.806781053543091,2,none,0.0
+Residual,1.3208866119384766,1,none,0.0

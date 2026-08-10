@@ -1,0 +1,2 @@
+﻿BatteryID,Seed,Width,PhysicsMode,LambdaPhy,RMSE,MAE,MAPE,R2,TrendViolationRate,TrendMeanPositiveJump,TrendMaxPositiveJump,TrendMeanAbsSecondDifference
+B0034,42,16,none,0.0,2.939622400098842,2.415338774544855,3.5442067527579932,0.2829823535624484,0.0,0.0,0.0,0.12194123139252534
