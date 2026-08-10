@@ -1,0 +1,33 @@
+{
+  "purpose": "Table-5 direct-SOH checkpoint before G-MTC fusion",
+  "protocol": "first 20% target prefix; first 80% of prefix fit; last 20% of prefix validation; remaining 80% development evaluation",
+  "inference": "direct estimation from observed HF window ending at current cycle; no recursive SOH/component feedback",
+  "development_set_warning": "B0007/B0018 have been inspected repeatedly and are not untouched confirmatory test sets",
+  "battery": "B0007",
+  "models": [
+    "CNN"
+  ],
+  "feature_set": "augmented",
+  "capacity": "compact",
+  "seed": 42,
+  "epochs": 150,
+  "patience": 30,
+  "batch_size": 32,
+  "learning_rate": 0.001,
+  "weight_decay": 1e-05,
+  "device": "cpu",
+  "data_summary": {
+    "BatteryID": "B0007",
+    "TotalCycles": 168,
+    "FitCycles": 26,
+    "ValidationCycles": 7,
+    "DevelopmentTestCycles": 135,
+    "PaperPrefixEndExclusive": 33,
+    "SequenceLength": 10,
+    "TrainingTrajectories": 6,
+    "TrainingWindows": 102,
+    "ValidationWindows": 7,
+    "DevelopmentTestWindows": 135
+  },
+  "config_sha256": "01a5c58b5deac30b6904c68361427346cbd26add662ba57cb785f683d5e35900"
+}
