@@ -27,4 +27,7 @@
   "formal_validation_started": false,
   "smoke_lambda_weight": 0.01,
   "official_smoke_excluded_from_accuracy_comparison": true
+  ,"one_seed_screen_completed": true
+  ,"three_seed_candidate_lambda": 0.1
+  ,"one_seed_effect_interpretation": "numerically_tiny_not_evidence"
 }

@@ -80,5 +80,8 @@
   "cila_official_lambda_weight": 0.1,
   "cila_locked_seed42_data_gate": "PASS",
   "cila_locked_seed42_initial_contribution_ratio": 0.007828583879474185,
-  "status": "waiting_cila_one_seed_validation_command_confirmation"
+  "cila_one_seed_screen_completed": true,
+  "cila_three_seed_candidate_lambda": 0.1,
+  "cila_one_seed_effect_supported": false,
+  "status": "waiting_cila_three_seed_validation_command_confirmation"
 }
