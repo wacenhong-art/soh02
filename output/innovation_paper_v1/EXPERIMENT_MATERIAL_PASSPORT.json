@@ -1,0 +1,24 @@
+{
+  "schema": "ars_experiment_material_passport/1",
+  "origin_skill": "experiment-agent",
+  "origin_mode": "run+validate",
+  "version_label": "outer_experiment_v1",
+  "verification_status": "VERIFIED",
+  "config_hash": "797a026852b95eecdc1ce2a284d21396bd95df0df5ba66e533805076d8933a10",
+  "git_parent_at_test_lock": "35e4c78",
+  "seeds": [42, 52, 62, 72, 82],
+  "development_domains": ["B0007", "B0018"],
+  "outer_domains": ["B0043", "B0044"],
+  "outer_protocol": "60/20/20 labeled target adaptation; not zero-label cross-battery",
+  "test_tuning": false,
+  "metrics_recomputed_from_per_cycle": true,
+  "statistical_fallacies_checked": "11/11",
+  "CILAInnovationSupported": false,
+  "claim_boundary": "weak development improvement did not survive preregistered outer confirmation",
+  "artifact_sha256": {
+    "formal_outer_metrics.csv": "4925f79177945bbbc0c5f1f7930747a998c52206cfcdef1b895fe6052785e530",
+    "formal_outer_per_cycle_predictions.csv": "3015227b3ac40c9c5c10869016e7e7359a59ab67d16363b8c77baf98c56cb478",
+    "formal_outer_summary.csv": "30ca455e767302a4e03bff2fbbcea796288ffab27fff181fc54866489b4d8468",
+    "formal_outer_bootstrap_ci.csv": "e28018df01133c5837f1617c0f75403518142fcdba116ae8e71edbc8a854fa15"
+  }
+}

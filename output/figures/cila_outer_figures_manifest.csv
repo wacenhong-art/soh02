@@ -1,0 +1,5 @@
+﻿Figure,Stage,TestTuning
+cila_outer_rmse_multiseed_log_v1.png,formal_outer_test,False
+cila_outer_paired_delta_v1.png,formal_outer_test,False
+cila_outer_prediction_iqr_v1.png,formal_outer_test,False
+cila_outer_bootstrap_ci_v1.png,formal_outer_test,False

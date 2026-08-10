@@ -5,13 +5,15 @@
   "test_tuning_prohibited": true,
   "seed_42": {
     "branches": "completed",
-    "original_pooled": "not_started_approval_transport_failure",
-    "cila_pooled": "not_started",
+    "original_pooled": "completed",
+    "cila_pooled": "completed",
     "branch_metrics": {
       "B0043": {"RMSE": 46.11950551624009, "MAE": 39.49738693237305, "MAPE": 542.312, "R2": -6.5991621017456055},
       "B0044": {"RMSE": 29.194231649781326, "MAE": 21.434669494628906, "MAPE": 300.80157, "R2": -2.2487428188323975}
     }
   },
-  "seeds_52_62_72_82": "not_started",
-  "innovation_effect_available": false
+  "seeds_52_62_72_82": "completed",
+  "innovation_effect_available": true,
+  "CILAInnovationSupported": false,
+  "decision_artifact": "formal_outer_decision.json"
 }

@@ -1,0 +1,53 @@
+{
+  "physics_modes": [
+    "none"
+  ],
+  "lambda_phy": 0.0,
+  "epochs": 150,
+  "seed": 72,
+  "lambda_weight": 0.1,
+  "evaluation_split": "test",
+  "test_accessed_for_selection": false,
+  "timesnet": "task-preregistered-original-timesnet-both-branches",
+  "fusion": "paper-attention-bilstm",
+  "transfer_pretrain": false,
+  "oselm": false,
+  "causal_multirate": false,
+  "scf_gan_algorithm_changed": false,
+  "fusion_stable_init": true,
+  "component_input": "HF+lagged-component",
+  "clip_recursive_state": false,
+  "physics_applied_to": "STL Trend branch only",
+  "protocols": [
+    {
+      "BatteryID": "B0043",
+      "Rows": 88,
+      "TrainEnd": 52,
+      "ValidationEnd": 70,
+      "TestRows": 18,
+      "EvaluationSplit": "test",
+      "TestLabelsUsedAsFeatures": false,
+      "STLFitEndExclusive": 52,
+      "ComponentFitEndExclusive": 41,
+      "ValidationLabelsUsedForComponentTraining": false,
+      "ComponentInput": "HF1/HF2/HF3+lagged-component",
+      "RecursiveStateClippedToTrainRange": false,
+      "Protocol": "target-first-60%-labeled-adaptation; next-20%-validation; last-20%-strict-test"
+    },
+    {
+      "BatteryID": "B0044",
+      "Rows": 88,
+      "TrainEnd": 52,
+      "ValidationEnd": 70,
+      "TestRows": 18,
+      "EvaluationSplit": "test",
+      "TestLabelsUsedAsFeatures": false,
+      "STLFitEndExclusive": 52,
+      "ComponentFitEndExclusive": 41,
+      "ValidationLabelsUsedForComponentTraining": false,
+      "ComponentInput": "HF1/HF2/HF3+lagged-component",
+      "RecursiveStateClippedToTrainRange": false,
+      "Protocol": "target-first-60%-labeled-adaptation; next-20%-validation; last-20%-strict-test"
+    }
+  ]
+}

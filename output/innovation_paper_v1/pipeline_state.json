@@ -1,0 +1,29 @@
+{
+  "schema": "ars_soh_pipeline_state/1",
+  "topic": "Small-sample lithium-ion battery SOH estimation with covariance-aligned fusion",
+  "language": "zh-CN_with_bilingual_abstract",
+  "citation_style": "IEEE",
+  "entry_point": "experiment_bridge_before_stage_2_write",
+  "pipeline_state": "content_complete_with_negative_result",
+  "current_stage": "finalize_after_author_metadata",
+  "repository_head_at_entry": "9fdd8a0",
+  "experiment_config_hash": "797a026852b95eecdc1ce2a284d21396bd95df0df5ba66e533805076d8933a10",
+  "stages": {
+    "research": {"status": "completed", "outputs": ["RQ_BRIEF", "METHODOLOGY_BLUEPRINT", "ANNOTATED_BIBLIOGRAPHY", "SYNTHESIS_REPORT"]},
+    "experiment": {"status": "completed", "completed_outer_seeds": [42, 52, 62, 72, 82], "test_accessed": true, "test_tuning_prohibited": true, "CILAInnovationSupported": false},
+    "write": {"status": "completed"},
+    "integrity_pre": {"status": "completed_pass_with_notes", "mandatory": true},
+    "review": {"status": "completed_major_revision_repositioned", "mandatory": true},
+    "revision": {"status": "completed_in_draft_v1"},
+    "integrity_final": {"status": "completed_pass_with_author_metadata_block", "mandatory": true},
+    "finalize": {"status": "blocked_only_by_real_author_metadata_and_target_template"}
+  },
+  "materials": {
+    "research_foundation": true,
+    "development_validation": true,
+    "outer_test_complete": true,
+    "paper_draft": true,
+    "verified_final_paper": true
+  },
+  "claim_boundary": "Frozen outer confirmation failed; manuscript may report robustness boundary but not CILA superiority"
+}

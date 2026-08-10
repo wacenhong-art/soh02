@@ -1,0 +1,17 @@
+{
+  "config_hash": "797a026852b95eecdc1ce2a284d21396bd95df0df5ba66e533805076d8933a10",
+  "seeds": [
+    42,
+    52,
+    62,
+    72,
+    82
+  ],
+  "metrics_recomputed_from_per_cycle": true,
+  "paired_truth_identical": true,
+  "test_used_for_tuning": false,
+  "all_battery_gates_pass": false,
+  "PhysicsInnovationSupported": false,
+  "CILAInnovationSupported": false,
+  "claim_if_false": "outer confirmation failed; preserve as negative generalization evidence"
+}

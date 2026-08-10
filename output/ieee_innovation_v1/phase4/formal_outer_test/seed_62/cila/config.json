@@ -1,0 +1,26 @@
+{
+  "mode": "coral",
+  "lambda_align": 0.1,
+  "lambda_weight": 0.1,
+  "seed": 62,
+  "epochs": 150,
+  "patience": 30,
+  "domains": {
+    "B0043": "C:\\Users\\ROG\\Documents\\Python\\soh02\\output\\ieee_innovation_v1\\phase4\\formal_outer_test\\seed_62\\branches\\B0043\\none",
+    "B0044": "C:\\Users\\ROG\\Documents\\Python\\soh02\\output\\ieee_innovation_v1\\phase4\\formal_outer_test\\seed_62\\branches\\B0044\\none"
+  },
+  "input_sha256": {
+    "B0043/train": "547cecdfaaea433a64e0a908acc9696ede56a9ad1401cc1da7877fd92fedec3e",
+    "B0043/val": "62cc0edf5567ba0e65b1a163c6221ae9c319c4ce5801fdf028c9fc7314251131",
+    "B0043/test": "405fa6b1790f94938df6e1aafd6e52101bb7a9642fd36c162def0f7d243046ce",
+    "B0044/train": "7bba0192ab7d719a32caaed91d68b3c97f8748bbebfe57add162996f46b9823e",
+    "B0044/val": "0752aa5c4ced4f538df8e11f6027084264df6a026ccf1de976ecf014ab915d50",
+    "B0044/test": "d1baf60eae44490e81020d01da9352a403762502ec70337757df524437c04db4"
+  },
+  "architecture": "unchanged AttentionBiLSTMFusion paper mode",
+  "alignment": "pairwise CORAL on pooled-standardized existing temporal context",
+  "evaluate_test": true,
+  "validate_only": false,
+  "stable_init": true,
+  "config_hash": "195665dc9ee096863fb9e79197e4439756ccaa0cabb23ea9c5aff61eb9a93555"
+}

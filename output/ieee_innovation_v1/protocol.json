@@ -96,14 +96,18 @@
   "formal_outer_launch_attempted": true,
   "formal_outer_launch_status": "external approval transport failure before process creation",
   "formal_outer_output_created": true,
-  "formal_outer_completed_seeds": [],
-  "formal_outer_partial_seed": 42,
+  "formal_outer_completed_seeds": [42, 52, 62, 72, 82],
+  "formal_outer_partial_seed": null,
   "formal_outer_seed42_branch_metrics": {
     "B0043_RMSE": 46.11950551624009,
     "B0043_R2": -6.5991621017456055,
     "B0044_RMSE": 29.194231649781326,
     "B0044_R2": -2.2487428188323975
   },
-  "formal_outer_seed42_paired_fusions_completed": false,
-  "status": "formal_outer_seed42_branches_complete_paired_fusion_blocked"
+  "formal_outer_seed42_paired_fusions_completed": true,
+  "formal_outer_all_paired_fusions_completed": true,
+  "formal_outer_metrics_recomputed": true,
+  "formal_outer_CILAInnovationSupported": false,
+  "formal_outer_decision": "phase4/formal_outer_test/formal_outer_decision.json",
+  "status": "formal_outer_complete_confirmation_failed_writing_in_progress"
 }
