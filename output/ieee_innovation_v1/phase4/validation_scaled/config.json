@@ -1,0 +1,23 @@
+{
+  "mode": "coral",
+  "lambda_align": 0.01,
+  "seed": 52,
+  "epochs": 150,
+  "patience": 30,
+  "domains": {
+    "B0007": "C:\\Users\\ROG\\Documents\\Python\\soh02\\output\\candidate_ensemble\\seed_52\\B0007\\none",
+    "B0018": "C:\\Users\\ROG\\Documents\\Python\\soh02\\output\\candidate_ensemble\\seed_52\\B0018\\none"
+  },
+  "input_sha256": {
+    "B0007/train": "c021300cb9eb10fddc2c3e46bf42053cafd5e7eac0d703126a4aae121fdaa5ef",
+    "B0007/val": "2795cac6ab81609f436854218b94207a2cc83073f324125cc00f8b99a61b8cca",
+    "B0018/train": "716f43e66fec29ac50920e067ef21181340abfa276b8d82b08c640e69612646c",
+    "B0018/val": "49422b16037e5f76bf17323a1eea723fa8be83dd9ff7e623bd788d94b45045c9"
+  },
+  "architecture": "unchanged AttentionBiLSTMFusion paper mode",
+  "alignment": "pairwise CORAL on pooled-standardized existing temporal context",
+  "evaluate_test": false,
+  "validate_only": true,
+  "stable_init": true,
+  "config_hash": "628d8c16a453bbfe1868807ab330c16d2c0edbb835a3e78aa16e8ef91beccebe"
+}

@@ -27,6 +27,8 @@ def main():
     changed = torch.cat([base, base * torch.tensor([1., 2., 3., 1., 2., 3.])], dim=0).requires_grad_(True)
     positive = cila.coral_loss(changed, domains)
     assert positive.item() > 0
+    rescaled = cila.coral_loss(changed * 2.0 + 7.0, domains)
+    assert torch.allclose(positive, rescaled, rtol=1e-5, atol=1e-7)
     positive.backward()
     assert changed.grad is not None and torch.isfinite(changed.grad).all()
 
@@ -51,7 +53,7 @@ def main():
     second=cila.fusion.sliding_windows(seq+1000,comps,target,10)[0]
     pooled=np.concatenate([first,second])
     assert np.all(pooled[:len(first)]<1000) and np.all(pooled[len(first):]>=1000)
-    print("CILA unit gates PASS: zero/positive/gradient/balanced-batch/API/lambda0/window-boundary")
+    print("CILA unit gates PASS: zero/positive/scale-invariant/gradient/balanced-batch/API/lambda0/window-boundary")
 
 
 if __name__ == "__main__":

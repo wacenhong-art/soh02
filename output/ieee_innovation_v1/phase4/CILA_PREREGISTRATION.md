@@ -15,7 +15,7 @@
 
 `L_total = L_prediction + lambda_weight * L_weight + lambda_align * L_CORAL`
 
-- `L_CORAL`只作用于`AttentionBiLSTMFusion.encode_context()`返回的既有潜表示。
+- `L_CORAL`只作用于`AttentionBiLSTMFusion.encode_context()`返回的既有潜表示。冒烟尺度诊断后固定为跨域共享的批次标准化再计算协方差；不使用域标签分别标准化。
 - 不新增预测网络，不替换任何分支，不修改SCF-GAN，不加入PINN，不约束最终SOH。
 - `none, lambda_align=0`与`coral, lambda_align=0`必须在相同初始化和批次下数值等价。
 
@@ -47,6 +47,7 @@
 3. Every balanced batch contains at least two BatteryID domains and at least two samples per domain.
 4. Sliding windows are created inside each battery and never cross BatteryID boundaries.
 5. `lambda_align=0` gives exactly the base objective and unchanged two-output fusion API.
+6. CORAL must be invariant to a shared affine rescaling of the pooled context within tolerance.
 
 ### Development Gate
 

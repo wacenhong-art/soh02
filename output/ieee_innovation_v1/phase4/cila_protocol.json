@@ -3,7 +3,8 @@
   "status": "preregistered_before_implementation_validation",
   "innovation": "Condition-Invariant Latent Alignment",
   "loss": "L_prediction + lambda_weight * L_weight + lambda_align * L_CORAL",
-  "alignment_location": "existing AttentionBiLSTMFusion temporal context",
+  "alignment_location": "pooled-batch standardized existing AttentionBiLSTMFusion temporal context",
+  "alignment_scale_stabilization": "shared pooled mean/std across all domains; fixed after pre-result smoke diagnostic",
   "modes": ["none", "coral"],
   "lambda_align_values": [0.0, 0.001, 0.01, 0.1],
   "lambda_align_default": 0.01,
@@ -20,5 +21,7 @@
   "scf_gan_changed": false,
   "final_soh_constrained": false,
   "full_pinn_added": false,
-  "user_confirmed": true
+  "user_confirmed": true,
+  "smoke_raw_coral_scale_gate": "FAILED_INACTIVE",
+  "formal_validation_started": false
 }

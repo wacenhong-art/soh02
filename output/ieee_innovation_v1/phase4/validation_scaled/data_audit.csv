@@ -1,0 +1,5 @@
+BatteryID,DatasetID,Split,WindowRows,FirstCycle,LastCycle,StrictlyIncreasing,WindowsCrossBatteryBoundary,TargetLabelsUsedAsInputs
+B0007,B0007,train,80,20,99,True,False,False
+B0018,B0018,train,56,20,75,True,False,False
+B0007,B0007,validation,34,100,133,True,False,False
+B0018,B0018,validation,26,76,101,True,False,False

@@ -69,6 +69,11 @@
   "cila_protocol": "phase4/cila_protocol.json",
   "cila_unit_gate": "PASS",
   "cila_real_data_boundary_gate": "PASS",
-  "cila_training_started": false,
-  "status": "waiting_cila_smoke_command_confirmation"
+  "cila_training_started": true,
+  "cila_raw_smoke_completed": true,
+  "cila_raw_smoke_scale_gate": "FAILED_INACTIVE",
+  "formal_validation_started": false,
+  "cila_scaled_unit_gate": "PASS",
+  "cila_scaled_initial_contribution_ratio": 0.019344512570418287,
+  "status": "waiting_scaled_cila_smoke_command_confirmation"
 }

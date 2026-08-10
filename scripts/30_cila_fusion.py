@@ -44,9 +44,18 @@ def sha256_file(path: Path) -> str:
 
 
 def coral_loss(context: torch.Tensor, domain_ids: torch.Tensor) -> torch.Tensor:
-    """Mean pairwise CORAL covariance discrepancy across declared domains."""
+    """Mean pairwise CORAL discrepancy after pooled scale stabilization.
+
+    The same batch-level location and scale are used for every domain.  This
+    preserves between-domain covariance differences while preventing the loss
+    from becoming numerically inactive merely because the existing Bi-LSTM
+    context has a small internal scale.
+    """
     if context.ndim != 2:
         raise ValueError("context must have shape [batch, features]")
+    pooled_mean = context.mean(dim=0, keepdim=True)
+    pooled_std = context.std(dim=0, unbiased=False, keepdim=True).clamp_min(1e-6)
+    context = (context - pooled_mean) / pooled_std
     unique = torch.unique(domain_ids, sorted=True)
     if len(unique) < 2:
         raise ValueError("CILA requires at least two domains in every training batch")
@@ -241,6 +250,7 @@ def train_model(model, data: PooledData, output_dir: Path, mode: str, lambda_ali
         divisor = max(len(train_loader), 1)
         rows.append({"Epoch": epoch, "TrainTotal": train_sums[0]/divisor, "TrainPrediction": train_sums[1]/divisor,
                      "TrainWeight": train_sums[2]/divisor, "TrainCORAL": train_sums[3]/divisor,
+                     "TrainCORALContribution":lambda_align*train_sums[3]/divisor,
                      "ValidationSelectionObjective": val_objective, "LearningRate": optimizer.param_groups[0]["lr"]})
         if epoch == 1 or epoch % 25 == 0:
             print(f"epoch={epoch:04d} train={train_sums[0]/divisor:.6f} coral={train_sums[3]/divisor:.6f} val={val_objective:.6f}", flush=True)
@@ -306,7 +316,7 @@ def run(args):
     model=fusion.AttentionBiLSTMFusion(data.comp_mean,data.comp_std,data.y_mean,data.y_std,fusion_mode="paper",stable_init=args.stable_init).to(fusion.device)
     config={"mode":mode,"lambda_align":lambda_align,"seed":args.seed,"epochs":args.epochs,"patience":args.patience,
             "domains":{k:str(v) for k,v in domains.items()},"input_sha256":{f"{k}/{s}":sha256_file(v/f"comp_pred_{s}.csv") for k,v in domains.items() for s in (["train","val","test"] if args.evaluate_test else ["train","val"])},
-            "architecture":"unchanged AttentionBiLSTMFusion paper mode","alignment":"pairwise CORAL on existing temporal context",
+            "architecture":"unchanged AttentionBiLSTMFusion paper mode","alignment":"pairwise CORAL on pooled-standardized existing temporal context",
             "evaluate_test":args.evaluate_test,"validate_only":args.validate_only,"stable_init":args.stable_init}
     config_blob=json.dumps(config,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode(); config["config_hash"]=hashlib.sha256(config_blob).hexdigest()
     (output_dir/"config.json").write_text(json.dumps(config,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
@@ -319,7 +329,20 @@ def run(args):
                                    "FirstCycle":int(cycles[0]),"LastCycle":int(cycles[-1]),"StrictlyIncreasing":bool(np.all(np.diff(cycles)>0)),
                                    "WindowsCrossBatteryBoundary":False,"TargetLabelsUsedAsInputs":False})
         audit=pd.DataFrame(audit_rows); audit.to_csv(output_dir/"data_audit.csv",index=False)
-        print(audit.to_string(index=False)); print("validate_only=PASS",flush=True); return audit
+        sampler=BalancedDomainBatchSampler(data.train.domain_ids.numpy(),fusion.BATCH_SIZE,args.seed)
+        diagnostic_loader=DataLoader(data.train,batch_sampler=sampler)
+        x_seq,comp,y_z,domain_ids,_=next(iter(diagnostic_loader))
+        model.eval()
+        with torch.no_grad():
+            pred_z,weights,context=model(x_seq.to(fusion.device),comp.to(fusion.device),return_context=True)
+            prediction=nn.functional.mse_loss(pred_z,y_z.to(fusion.device))
+            alignment=coral_loss(context,domain_ids.to(fusion.device))
+        diagnostic={"InitialPredictionLoss":float(prediction.item()),"InitialCORAL":float(alignment.item()),
+                    "WeightedCORAL":float(lambda_align*alignment.item()),
+                    "WeightedCORALToPredictionRatio":float(lambda_align*alignment.item()/max(prediction.item(),1e-12)),
+                    "DomainsPerBatch":int(torch.unique(domain_ids).numel())}
+        (output_dir/"loss_scale_diagnostic.json").write_text(json.dumps(diagnostic,indent=2)+"\n",encoding="utf-8")
+        print(audit.to_string(index=False)); print(json.dumps(diagnostic,indent=2)); print("validate_only=PASS",flush=True); return audit
     model,best=train_model(model,data,output_dir,mode,lambda_align,args.seed,args.epochs,args.patience)
     val_metrics,_=infer(model,data.validation,data,"validation",output_dir); frames=[val_metrics]
     if args.evaluate_test:
