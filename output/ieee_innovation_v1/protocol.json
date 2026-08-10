@@ -10,7 +10,7 @@
   "literature_provider_required": "Sider Scholar",
   "literature_search_started": true,
   "source_archives_read_only": true,
-  "formal_outer_test_selected": false,
+  "formal_outer_test_selected": true,
   "B0007_B0018_status": "previously_contacted_development_evaluation",
   "untouched_candidate_batteries": [
     "B0025",
@@ -51,10 +51,24 @@
   "first_round_candidate_count": 103,
   "deep_read_verified_count": 10,
   "phase3_synthesis_started": true,
-  "innovation_selected": false,
+  "innovation_selected": true,
   "phase3_completed_at": "2026-08-10T08:33:02.399477+08:00",
   "phase3_gate": "PASS_WITH_MANDATORY_SAFEGUARDS",
   "recommended_innovation_id": "CILA",
   "recommended_innovation_score": 92,
-  "candidate_model_errors_inspected": false
+  "candidate_model_errors_inspected": false,
+  "user_confirmed_innovation": "CILA",
+  "outer_test_batteries": [
+    "B0049",
+    "B0050",
+    "B0051",
+    "B0052"
+  ],
+  "outer_test_selection_basis": "metadata-only: 4C, constant-current 2A, cutoff-voltage family",
+  "outer_test_results_inspected_before_lock": false,
+  "cila_protocol": "phase4/cila_protocol.json",
+  "cila_unit_gate": "PASS",
+  "cila_real_data_boundary_gate": "PASS",
+  "cila_training_started": false,
+  "status": "waiting_cila_smoke_command_confirmation"
 }

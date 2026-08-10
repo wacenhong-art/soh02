@@ -228,11 +228,20 @@ class AttentionBiLSTMFusion(nn.Module):
             output_layer.weight.data[0, 2 * index + 1] = -coefficient
         output_layer.bias.data[0] = (self.comp_mean.sum() - self.y_mean) / self.y_std
 
-    def forward(self, x_seq, comp):
+    def encode_context(self, x_seq):
+        """Return the existing Attention Bi-LSTM temporal representation.
+
+        This is an interface extraction only: the paper-path forward pass uses
+        the same operations and parameters as before.  CILA consumes this
+        representation in a separate experiment runner without replacing the
+        fusion network.
+        """
         x_seq = self.comp_attn(x_seq)
         lstm_out, _ = self.bilstm(x_seq)
-        context = self.temp_attn(lstm_out)
+        return self.temp_attn(lstm_out)
 
+    def forward(self, x_seq, comp, return_context=False):
+        context = self.encode_context(x_seq)
         weights = torch.softmax(self.weight_net(context), dim=-1)
         # The paper does not disclose feature scaling before Eq. (28).  Use
         # train-fitted component statistics so the 3->16->1 head and the
@@ -248,6 +257,8 @@ class AttentionBiLSTMFusion(nn.Module):
             )
             physical_prediction = base + correction
             prediction_z = (physical_prediction - self.y_mean) / self.y_std
+        if return_context:
+            return prediction_z, weights, context
         return prediction_z, weights
 
 

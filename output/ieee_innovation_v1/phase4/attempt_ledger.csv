@@ -1,0 +1,6 @@
+AttemptID,Stage,Change,Reason,ValidationResult,FailedGate,TestResultsInspected,Status
+C00,implementation,"Expose existing fusion context; add pooled-domain CORAL runner","Implement confirmed CILA without replacing G-MTC modules","six synthetic unit gates passed",,False,unit_pass
+C00E1,unit_environment,"Run unit test with bundled document Python","Initial unit invocation","PyTorch unavailable in that runtime",missing_torch_in_nontraining_runtime,False,failed_preserved
+C00E2,unit_loader,"Dynamically import CILA test module","Exercise Python 3.14 project runtime","dataclass module was not registered in sys.modules",test_loader_registration,False,failed_preserved
+C00E3,unit_api,"Compare two-output and context-output calls in train mode","Verify backward-compatible API","Dropout correctly made consecutive train-mode calls differ",invalid_test_assumption_dropout,False,failed_preserved
+C00D1,data_validation,"Load B0007/B0018 original-branch train and validation component predictions","Verify real-domain shapes and boundaries before training","B0007 80/34 windows; B0018 56/26 windows; all cycles increasing; no cross-battery windows",,False,passed
