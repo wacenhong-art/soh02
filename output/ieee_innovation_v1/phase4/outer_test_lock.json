@@ -1,0 +1,66 @@
+{
+  "schema": "outer_test_lock/1",
+  "locked_at_utc": "2026-08-10T02:22:17.829914+00:00",
+  "git_parent": "35e4c78",
+  "outer_domains": [
+    "B0043",
+    "B0044"
+  ],
+  "protocol": "first 60% labeled adaptation; next 20% validation; last 20% strict test",
+  "zero_label_cross_battery": false,
+  "seeds": [
+    42,
+    52,
+    62,
+    72,
+    82
+  ],
+  "branch_configuration": {
+    "physics_mode": "none",
+    "lambda_phy": 0.0,
+    "lambda_weight": 0.1,
+    "epochs": 150,
+    "patience": 30,
+    "fusion_stable_init": true,
+    "component_input": "HF1/HF2/HF3 plus lagged component",
+    "recursive_state_clipping": false,
+    "timesnet": "original",
+    "residual": "iTransformer",
+    "fusion": "Attention Bi-LSTM"
+  },
+  "paired_fusion_configurations": {
+    "Original": {
+      "mode": "none",
+      "lambda_align": 0.0
+    },
+    "CILA": {
+      "mode": "coral",
+      "lambda_align": 0.1
+    },
+    "common": {
+      "lambda_weight": 0.1,
+      "epochs": 150,
+      "patience": 30,
+      "stable_init": true
+    }
+  },
+  "selection_source": "B0007/B0018 validation only",
+  "outer_selection_used_model_metrics": false,
+  "outer_test_results_inspected": false,
+  "test_reuse_for_tuning_prohibited": true,
+  "artifact_sha256": {
+    "scripts/01_extract_hf.py": "77035eed51456c33d5880ad78eb8af80109b6a9109aeaca6387080a781c84ae2",
+    "scripts/02_scf_gan.py": "c28effa6941e1d52a95334e169ab3ebd5863f686a857ee74884ea4eaef161d9b",
+    "scripts/03_time_series.py": "0e933d6bd590ed369864fe63220429cb7e43cf804fa37b9db604189298081715",
+    "scripts/04_attention_fusion.py": "871e0e65ddc8482d34e229dc9c73b95c2f18360b5c86e50336ba65e8a2218061",
+    "scripts/08_physics_trend_ablation.py": "ccbe8ec1443cb7dc9a074a2e5064008eed0602ba0cde6d0ad9e0348f844d666d",
+    "scripts/30_cila_fusion.py": "d0ee489fac37f856e3180f5d2a5c5ab772c9d1c50eb9f2b0df4f2a836a65cfad",
+    "data/hf_csv/B0043_hf.csv": "67864c0b67ed6b1367ffd7342cc425d2f702a9499b9b2a03c12329f43a6df858",
+    "data/hf_csv/B0044_hf.csv": "5a36ec6d6e6c7d92952a0f332e1f24ec9ae09a7dc676c5182445f530fb24cd83",
+    "output/B0043_aug_train_hf.csv": "88f53a3086bbb4b0b8eb952daddeb1c68bd04e6b9f949718b00e3561d8a5bb1f",
+    "output/B0044_aug_train_hf.csv": "b4e3fb79d2059c2a9475265b6e600b58f82e588bb41386ddfedf03d051ece016",
+    "model/scf_generator.pth": "85697fdf20ac6af23bba61861dd3362557a55daf122c068a7766b9f7299d424e",
+    "model/scf_scaler.json": "4bfea8edd64b89174da3190086a2502f1ac0eb45d1c780e0cabd0a8d2439dd98"
+  },
+  "config_hash": "797a026852b95eecdc1ce2a284d21396bd95df0df5ba66e533805076d8933a10"
+}

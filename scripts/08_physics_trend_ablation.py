@@ -39,7 +39,12 @@ def reset_seed(seed):
 
 def stable_seed(base, battery, component):
     """Independent of battery execution order and ablation list length."""
-    battery_offset = {"B0007": 7000, "B0018": 18000}[battery]
+    battery_offset = {
+        "B0007": 7000,
+        "B0018": 18000,
+        "B0043": 43000,
+        "B0044": 44000,
+    }[battery]
     component_offset = {"Seasonal": 100, "Residual": 200, "Trend": 300}[component]
     return int(base + battery_offset + component_offset)
 

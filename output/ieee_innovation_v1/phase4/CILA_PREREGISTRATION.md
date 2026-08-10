@@ -25,7 +25,7 @@
 |---|---|---|
 | SCF-GAN frozen source | B0005, B0006 | 保持原源训练边界。 |
 | Contacted development domains | B0007, B0018 | 各自前60%生成分支训练预测；中间20%选择lambda；后20%仅作已接触开发评估。 |
-| Locked outer low-temperature group | B0049, B0050, B0051, B0052 | 4°C、2A、不同截止电压；配置锁定后才计算正式指标。 |
+| Locked outer low-temperature group | B0043, B0044 | 4°C、混合4A/1A、不同截止电压；冻结HF兼容性审计后锁定，配置锁定后才计算正式指标。 |
 | Reserve | all other untouched candidates | 不参与本轮选择。 |
 
 外层组仍允许每块目标电池前60%有标签小样本适配，因此不是零标签纯跨电池协议。论文主张必须写成“低温跨工况小样本适配中的方法有效性”，不能写成温度因果效应或零标签泛化。
@@ -60,7 +60,9 @@
 
 ### Formal Outer Gate
 
-After configuration hash lock, B0049–B0052 formal metrics are produced once for the five frozen seeds. If median RMSE fails to improve on every predeclared outer battery, or any battery materially deteriorates, CILA is not supported. The test protocol ends; no test-driven retuning is allowed.
+After configuration hash lock, B0043–B0044 formal metrics are produced once for the five frozen seeds. If median RMSE fails to improve on every predeclared outer battery, or any battery materially deteriorates, CILA is not supported. The test protocol ends; no test-driven retuning is allowed.
+
+The earlier B0049–B0052 metadata choice failed because 25 discharge cycles cannot support two SEQ_LEN=10 stages. B0053–B0056 then failed the frozen HF compatibility audit (0/1/18/1 usable rows). Both failures occurred before model inference and remain in the attempt ledger. B0043/B0044 were selected from the untouched reserve using condition metadata and HF-compatible row counts only.
 
 ## Known Confounds
 

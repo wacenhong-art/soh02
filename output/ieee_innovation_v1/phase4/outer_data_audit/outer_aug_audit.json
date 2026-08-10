@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "source_training_batteries": [
+    "B0005",
+    "B0006"
+  ],
+  "target_batteries": [
+    "B0043",
+    "B0044"
+  ],
+  "augmentation_scope": "target first 60 percent only",
+  "validation_test_augmented": false,
+  "scf_gan_algorithm_changed": false,
+  "generator_sha256": "85697fdf20ac6af23bba61861dd3362557a55daf122c068a7766b9f7299d424e",
+  "scaler_sha256": "4bfea8edd64b89174da3190086a2502f1ac0eb45d1c780e0cabd0a8d2439dd98"
+}

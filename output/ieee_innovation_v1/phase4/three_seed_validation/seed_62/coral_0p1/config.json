@@ -1,0 +1,24 @@
+{
+  "mode": "coral",
+  "lambda_align": 0.1,
+  "lambda_weight": 0.1,
+  "seed": 62,
+  "epochs": 150,
+  "patience": 30,
+  "domains": {
+    "B0007": "C:\\Users\\ROG\\Documents\\Python\\soh02\\output\\paper_baseline_v1\\training_logs\\b04r1_validation_lw0.1_seed_62\\B0007\\none",
+    "B0018": "C:\\Users\\ROG\\Documents\\Python\\soh02\\output\\paper_baseline_v1\\training_logs\\b04r1_validation_lw0.1_seed_62\\B0018\\none"
+  },
+  "input_sha256": {
+    "B0007/train": "b711c10e193a5e1181be687e6f3aa801b5d899e191a9cbb3491f9815ee869a64",
+    "B0007/val": "d0f358466ab628aa1e992e3a5c52caf9f63907c0daafb334586e8608ff2d3e7c",
+    "B0018/train": "7bde7fec6d5fd4eba6fdda9191bf1d6b41b59b958ac28250ece693fda5a0e66f",
+    "B0018/val": "cc613b25ebbfbccb47cbbc5bf9dd58784fa94a0e6337b82b8d2bc402dcd5df3b"
+  },
+  "architecture": "unchanged AttentionBiLSTMFusion paper mode",
+  "alignment": "pairwise CORAL on pooled-standardized existing temporal context",
+  "evaluate_test": false,
+  "validate_only": false,
+  "stable_init": true,
+  "config_hash": "59066d201ce9210eac9b1a21dbe1bbf591e7b2c8af0a8d8140135886c1c44abf"
+}

@@ -23,6 +23,7 @@ def test_stable_seed_is_order_independent():
     assert M.stable_seed(42, "B0007", "Trend") == M.stable_seed(42, "B0007", "Trend")
     assert M.stable_seed(42, "B0007", "Trend") != M.stable_seed(42, "B0018", "Trend")
     assert M.stable_seed(42, "B0018", "Trend") != M.stable_seed(42, "B0018", "Residual")
+    assert M.stable_seed(42, "B0043", "Trend") != M.stable_seed(42, "B0044", "Trend")
 
 
 def test_paper_branch_shapes_and_weights():

@@ -1,0 +1,35 @@
+{
+  "schema": "cila_validation_lock/2",
+  "locked": true,
+  "git_parent_at_lock": "35e4c78",
+  "architecture": "original TimesNet + original TimesNet + iTransformer + Attention Bi-LSTM",
+  "cila_mode": "coral",
+  "lambda_align": 0.1,
+  "lambda_weight": 0.1,
+  "epochs": 150,
+  "patience": 30,
+  "seeds": [42, 52, 62, 72, 82],
+  "development_domains": ["B0007", "B0018"],
+  "outer_domains": ["B0043", "B0044"],
+  "outer_protocol": "60/20/20 small-sample adaptation; not zero-label cross-battery",
+  "test_tuning": false,
+  "config_hash": "9b5a4dc40e9cf03b8f73ae3f60362b2abe899757a4adfca6325072f5a1ba814f",
+  "artifact_sha256": {
+    "scripts/30_cila_fusion.py": "d0ee489fac37f856e3180f5d2a5c5ab772c9d1c50eb9f2b0df4f2a836a65cfad",
+    "scripts/31_cila_validation_report.py": "504d79d03142f04367433c7a405ff29049a10b5008537a09c00d0696ae030739",
+    "scripts/01_extract_hf.py": "77035eed51456c33d5880ad78eb8af80109b6a9109aeaca6387080a781c84ae2",
+    "scripts/32_prepare_outer_hf.py": "52bbc53eea899841841d44c0ab753d1e5973baab4ece2bb934f8dad21bbbf524",
+    "scripts/33_audit_outer_hf_compatibility.py": "b27b22be578abcdf13c470233c9c82f853c631d96306e0a085606b65f597aff0",
+    "data/hf_csv/B0043_hf.csv": "67864c0b67ed6b1367ffd7342cc425d2f702a9499b9b2a03c12329f43a6df858",
+    "data/hf_csv/B0044_hf.csv": "5a36ec6d6e6c7d92952a0f332e1f24ec9ae09a7dc676c5182445f530fb24cd83"
+  },
+  "validation_gate": {
+    "direction": "PASS",
+    "median_rmse": "PASS",
+    "median_block_bootstrap": "PASS",
+    "practical_effect": "WEAK",
+    "negative_transfer_warning": "B0007 seed72"
+  },
+  "outer_test_results_inspected": false,
+  "outer_role_revision": "B0049-B0052 length failure and B0053-B0056 HF incompatibility were detected before inference; B0043-B0044 locked by metadata/HF count only"
+}

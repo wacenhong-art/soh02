@@ -19,17 +19,17 @@ B0039,untouched_candidate_unassigned,True,False,False,24C and 44C; discharge lev
 B0040,untouched_candidate_unassigned,True,False,False,24C and 44C; discharge levels 1/2/4A; cutoff 2.7V,No model prediction or capacity error evaluated in this audit.
 B0041,untouched_candidate_unassigned,True,False,False,4C; discharge levels 4A and 1A; cutoff 2.0V,No model prediction or capacity error evaluated in this audit.
 B0042,untouched_candidate_unassigned,True,False,False,4C; discharge levels 4A and 1A; cutoff 2.2V,No model prediction or capacity error evaluated in this audit.
-B0043,untouched_candidate_unassigned,True,False,False,4C; discharge levels 4A and 1A; cutoff 2.5V,No model prediction or capacity error evaluated in this audit.
-B0044,untouched_candidate_unassigned,True,False,False,4C; discharge levels 4A and 1A; cutoff 2.7V,No model prediction or capacity error evaluated in this audit.
+B0043,locked_outer_test_uninspected,True,True,False,4C; discharge levels 4A and 1A; cutoff 2.5V,HF audit passed with 88 rows and 32 expected fusion train windows; no model result inspected.
+B0044,locked_outer_test_uninspected,True,True,False,4C; discharge levels 4A and 1A; cutoff 2.7V,HF audit passed with 88 rows and 32 expected fusion train windows; no model result inspected.
 B0045,untouched_candidate_unassigned,True,False,False,4C; CC discharge 1A; cutoff 2.0V,No model prediction or capacity error evaluated in this audit.
 B0046,untouched_candidate_unassigned,True,False,False,4C; CC discharge 1A; cutoff 2.2V,No model prediction or capacity error evaluated in this audit.
 B0047,untouched_candidate_unassigned,True,False,False,4C; CC discharge 1A; cutoff 2.5V,No model prediction or capacity error evaluated in this audit.
 B0048,untouched_candidate_unassigned,True,False,False,4C; CC discharge 1A; cutoff 2.7V,No model prediction or capacity error evaluated in this audit.
-B0049,locked_outer_test_uninspected,True,True,False,4C; CC discharge 2A; cutoff 2.0V,Metadata-only preregistration for the CILA low-temperature outer group; no model result inspected.
-B0050,locked_outer_test_uninspected,True,True,False,4C; CC discharge 2A; cutoff 2.2V,Metadata-only preregistration for the CILA low-temperature outer group; no model result inspected.
-B0051,locked_outer_test_uninspected,True,True,False,4C; CC discharge 2A; cutoff 2.5V,Metadata-only preregistration for the CILA low-temperature outer group; no model result inspected.
-B0052,locked_outer_test_uninspected,True,True,False,4C; CC discharge 2A; cutoff 2.7V,Metadata-only preregistration for the CILA low-temperature outer group; no model result inspected.
-B0053,untouched_candidate_unassigned,True,False,False,4C; CC discharge 2A; cutoff 2.0V,No model prediction or capacity error evaluated in this audit.
-B0054,untouched_candidate_unassigned,True,False,False,4C; CC discharge 2A; cutoff 2.2V,No model prediction or capacity error evaluated in this audit.
-B0055,untouched_candidate_unassigned,True,False,False,4C; CC discharge 2A; cutoff 2.5V,No model prediction or capacity error evaluated in this audit.
-B0056,untouched_candidate_unassigned,True,False,False,4C; CC discharge 2A; cutoff 2.7V,No model prediction or capacity error evaluated in this audit.
+B0049,outer_feasibility_failed_uninspected,False,False,False,4C; CC discharge 2A; cutoff 2.0V,Only 25 discharge cycles; 60% prefix cannot support two SEQ_LEN=10 stages. No model result inspected.
+B0050,outer_feasibility_failed_uninspected,False,False,False,4C; CC discharge 2A; cutoff 2.2V,Only 25 discharge cycles; 60% prefix cannot support two SEQ_LEN=10 stages. No model result inspected.
+B0051,outer_feasibility_failed_uninspected,False,False,False,4C; CC discharge 2A; cutoff 2.5V,Only 25 discharge cycles; 60% prefix cannot support two SEQ_LEN=10 stages. No model result inspected.
+B0052,outer_feasibility_failed_uninspected,False,False,False,4C; CC discharge 2A; cutoff 2.7V,Only 25 discharge cycles; 60% prefix cannot support two SEQ_LEN=10 stages. No model result inspected.
+B0053,outer_feasibility_failed_uninspected,False,False,False,4C; CC discharge 2A; cutoff 2.0V,Frozen HF-compatible rows=0; no model result inspected.
+B0054,outer_feasibility_failed_uninspected,False,False,False,4C; CC discharge 2A; cutoff 2.2V,Frozen HF-compatible rows=1; no model result inspected.
+B0055,outer_feasibility_failed_uninspected,False,False,False,4C; CC discharge 2A; cutoff 2.5V,Frozen HF-compatible rows=18; two-stage window infeasible; no model result inspected.
+B0056,outer_feasibility_failed_uninspected,False,False,False,4C; CC discharge 2A; cutoff 2.7V,Frozen HF-compatible rows=1; no model result inspected.

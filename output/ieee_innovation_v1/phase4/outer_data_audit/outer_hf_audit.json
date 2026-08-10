@@ -1,0 +1,11 @@
+{
+  "archive": "C:\\Users\\ROG\\Documents\\5.+Battery+Data+Set\\5. Battery Data Set\\3. BatteryAgingARC_25-44.zip",
+  "archive_read_only": true,
+  "batteries": [
+    "B0043",
+    "B0044"
+  ],
+  "all_hashes_verified": true,
+  "all_protocols_feasible": true,
+  "soh_metrics_inspected": false
+}

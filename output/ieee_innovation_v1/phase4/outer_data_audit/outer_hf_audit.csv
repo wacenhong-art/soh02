@@ -1,0 +1,3 @@
+BatteryID,Archive,MatEntry,MatSHA256Verified,HFRowCount,TrainEnd,ValidationEnd,ValidationRows,TestRows,ExpectedFusionTrainWindows,OuterProtocolFeasible,SOHMetricsInspected,SourceArchiveModified
+B0043,C:\Users\ROG\Documents\5.+Battery+Data+Set\5. Battery Data Set\3. BatteryAgingARC_25-44.zip,B0043.mat,True,88,52,70,18,18,32,True,False,False
+B0044,C:\Users\ROG\Documents\5.+Battery+Data+Set\5. Battery Data Set\3. BatteryAgingARC_25-44.zip,B0044.mat,True,88,52,70,18,18,32,True,False,False

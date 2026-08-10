@@ -1,0 +1,31 @@
+BatteryID,HFCompatibleRows,TrainRows,ValidationRows,TestRows,ExpectedFusionTrainWindows,ProtocolFeasible,DeclaredConditionSummary,AuditStatus,SOHMetricsInspected
+B0034,187,112,37,38,92,True,24C; CC discharge 4A; cutoff 2.2V,count_only_no_model_metrics,False
+B0036,156,93,31,32,73,True,24C; CC discharge 2A; cutoff 2.7V,count_only_no_model_metrics,False
+B0033,108,64,22,22,44,True,24C; CC discharge 4A; cutoff 2.0V,count_only_no_model_metrics,False
+B0043,88,52,18,18,32,True,4C; discharge levels 4A and 1A; cutoff 2.5V,count_only_no_model_metrics,False
+B0044,88,52,18,18,32,True,4C; discharge levels 4A and 1A; cutoff 2.7V,count_only_no_model_metrics,False
+B0042,51,30,10,11,10,False,4C; discharge levels 4A and 1A; cutoff 2.2V,count_only_no_model_metrics,False
+B0038,46,27,9,10,7,False,24C and 44C; discharge levels 1/2/4A; cutoff 2.2V,count_only_no_model_metrics,False
+B0039,46,27,9,10,7,False,24C and 44C; discharge levels 1/2/4A; cutoff 2.5V,count_only_no_model_metrics,False
+B0040,46,27,9,10,7,False,24C and 44C; discharge levels 1/2/4A; cutoff 2.7V,count_only_no_model_metrics,False
+B0041,42,25,8,9,5,False,4C; discharge levels 4A and 1A; cutoff 2.0V,count_only_no_model_metrics,False
+B0029,39,23,8,8,3,False,43C; CC discharge 4A; cutoff 2.0V,count_only_no_model_metrics,False
+B0030,39,23,8,8,3,False,43C; CC discharge 4A; cutoff 2.2V,count_only_no_model_metrics,False
+B0031,39,23,8,8,3,False,43C; CC discharge 4A; cutoff 2.5V,count_only_no_model_metrics,False
+B0032,39,23,8,8,3,False,43C; CC discharge 4A; cutoff 2.7V,count_only_no_model_metrics,False
+B0026,28,16,6,6,0,False,"24C; 0.05Hz square-wave 4A, 50% duty; cutoff 2.2V",count_only_no_model_metrics,False
+B0028,27,16,5,6,0,False,"24C; 0.05Hz square-wave 4A, 50% duty; cutoff 2.7V",count_only_no_model_metrics,False
+B0025,26,15,5,6,0,False,"24C; 0.05Hz square-wave 4A, 50% duty; cutoff 2.0V",count_only_no_model_metrics,False
+B0027,26,15,5,6,0,False,"24C; 0.05Hz square-wave 4A, 50% duty; cutoff 2.5V",count_only_no_model_metrics,False
+B0055,18,10,4,4,0,False,4C; CC discharge 2A; cutoff 2.5V,count_only_no_model_metrics,False
+B0051,11,6,2,3,0,False,4C; CC discharge 2A; cutoff 2.5V,count_only_no_model_metrics,False
+B0050,7,4,1,2,0,False,4C; CC discharge 2A; cutoff 2.2V,count_only_no_model_metrics,False
+B0045,2,1,0,1,0,False,4C; CC discharge 1A; cutoff 2.0V,count_only_no_model_metrics,False
+B0047,2,1,0,1,0,False,4C; CC discharge 1A; cutoff 2.5V,count_only_no_model_metrics,False
+B0046,1,0,0,1,0,False,4C; CC discharge 1A; cutoff 2.2V,count_only_no_model_metrics,False
+B0048,1,0,0,1,0,False,4C; CC discharge 1A; cutoff 2.7V,count_only_no_model_metrics,False
+B0049,1,0,0,1,0,False,4C; CC discharge 2A; cutoff 2.0V,count_only_no_model_metrics,False
+B0054,1,0,0,1,0,False,4C; CC discharge 2A; cutoff 2.2V,count_only_no_model_metrics,False
+B0056,1,0,0,1,0,False,4C; CC discharge 2A; cutoff 2.7V,count_only_no_model_metrics,False
+B0052,0,0,0,0,0,False,4C; CC discharge 2A; cutoff 2.7V,count_only_no_model_metrics,False
+B0053,0,0,0,0,0,False,4C; CC discharge 2A; cutoff 2.0V,count_only_no_model_metrics,False

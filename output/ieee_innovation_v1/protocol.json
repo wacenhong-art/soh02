@@ -1,6 +1,5 @@
 {
   "schema": "ieee_innovation_phase1/1",
-  "status": "waiting_innovation_confirmation",
   "created_at": "2026-08-10T02:05:13.496726+08:00",
   "git_baseline": "3d55f12",
   "literature_window": {
@@ -44,7 +43,8 @@
     "B0055",
     "B0056"
   ],
-  "model_code_modified": false,
+  "model_code_modified": true,
+  "model_code_modification_scope": "CILA fusion experiment plus target-path/outer-battery compatibility; SCF-GAN algorithm unchanged",
   "phase2_completed_at": "2026-08-10T08:25:12.053589+08:00",
   "literature_search_completed": true,
   "sider_scholar_used": true,
@@ -59,12 +59,10 @@
   "candidate_model_errors_inspected": false,
   "user_confirmed_innovation": "CILA",
   "outer_test_batteries": [
-    "B0049",
-    "B0050",
-    "B0051",
-    "B0052"
+    "B0043",
+    "B0044"
   ],
-  "outer_test_selection_basis": "metadata-only: 4C, constant-current 2A, cutoff-voltage family",
+  "outer_test_selection_basis": "frozen-HF compatibility plus metadata only: 4C, mixed 4A/1A discharge, sufficient 60/20/20 windows",
   "outer_test_results_inspected_before_lock": false,
   "cila_protocol": "phase4/cila_protocol.json",
   "cila_unit_gate": "PASS",
@@ -72,7 +70,7 @@
   "cila_training_started": true,
   "cila_raw_smoke_completed": true,
   "cila_raw_smoke_scale_gate": "FAILED_INACTIVE",
-  "formal_validation_started": false,
+  "formal_validation_started": true,
   "cila_scaled_unit_gate": "PASS",
   "cila_scaled_initial_contribution_ratio": 0.019344512570418287,
   "cila_scaled_smoke_completed": true,
@@ -83,5 +81,20 @@
   "cila_one_seed_screen_completed": true,
   "cila_three_seed_candidate_lambda": 0.1,
   "cila_one_seed_effect_supported": false,
-  "status": "waiting_cila_three_seed_validation_command_confirmation"
+  "cila_five_seed_validation_completed": true,
+  "cila_validation_direction_gate": "PASS",
+  "cila_validation_practical_effect": "WEAK",
+  "cila_validation_config_hash": "9b5a4dc40e9cf03b8f73ae3f60362b2abe899757a4adfca6325072f5a1ba814f",
+  "outer_test_results_inspected": false,
+  "invalidated_outer_group": ["B0049", "B0050", "B0051", "B0052"],
+  "invalidated_outer_reason": "25 discharge cycles cannot support 60% prefix plus two SEQ_LEN=10 stages",
+  "cila_validation_lock_invalidated_for_outer_role_only": false,
+  "outer_data_gate": "PASS",
+  "outer_hf_rows": {"B0043": 88, "B0044": 88},
+  "outer_test_lock": "phase4/outer_test_lock.json",
+  "outer_test_config_hash": "797a026852b95eecdc1ce2a284d21396bd95df0df5ba66e533805076d8933a10",
+  "formal_outer_launch_attempted": true,
+  "formal_outer_launch_status": "external approval transport failure before process creation",
+  "formal_outer_output_created": false,
+  "status": "cila_outer_locked_awaiting_executable_training_permission"
 }

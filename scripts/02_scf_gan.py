@@ -14,6 +14,8 @@ CSV_PATH = os.path.join(ROOT_PATH, "data", "hf_csv")
 MODEL_SAVE = os.path.join(ROOT_PATH, "model")
 OUTPUT_PATH = os.path.join(ROOT_PATH, "output")
 TARGET_BATTERY = os.getenv("TARGET_BATTERY", "B0018").strip()
+SCF_ACTION = os.getenv("SCF_GAN_ACTION", "both").strip().lower()
+SCF_SEED = int(os.getenv("SCF_GAN_SEED", "42"))
 os.makedirs(MODEL_SAVE, exist_ok=True)
 os.makedirs(OUTPUT_PATH, exist_ok=True)
 
@@ -195,9 +197,12 @@ def generate_aug_data():
         scaler = json.load(f)
     feature_min = np.asarray(scaler["min"], dtype=np.float32)
     feature_max = np.asarray(scaler["max"], dtype=np.float32)
-    if TARGET_BATTERY not in {"B0007", "B0018"}:
-        raise ValueError("TARGET_BATTERY 仅支持 B0007 或 B0018")
-    df_raw = pd.read_csv(os.path.join(CSV_PATH, f"{TARGET_BATTERY}_hf.csv"))
+    if TARGET_BATTERY in {"B0005", "B0006"}:
+        raise ValueError("源训练电池不得作为小样本目标电池")
+    target_path = os.path.join(CSV_PATH, f"{TARGET_BATTERY}_hf.csv")
+    if not os.path.isfile(target_path):
+        raise FileNotFoundError(f"目标电池HF文件不存在: {target_path}")
+    df_raw = pd.read_csv(target_path)
     # 清洗数据
     for col in ["HF1","HF2","HF3","SOH"]:
         df_raw[col] = df_raw[col].apply(clean_num)
@@ -227,5 +232,13 @@ def generate_aug_data():
     print(f"训练集增强完成：真实{train_len}条 + 5套合成HF，共{len(aug_df)}条；验证/测试未增强")
 
 if __name__ == "__main__":
-    train_scf_gan()
-    generate_aug_data()
+    if SCF_ACTION not in {"train", "generate", "both"}:
+        raise ValueError("SCF_GAN_ACTION 必须为 train/generate/both")
+    np.random.seed(SCF_SEED)
+    torch.manual_seed(SCF_SEED)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(SCF_SEED)
+    if SCF_ACTION in {"train", "both"}:
+        train_scf_gan()
+    if SCF_ACTION in {"generate", "both"}:
+        generate_aug_data()

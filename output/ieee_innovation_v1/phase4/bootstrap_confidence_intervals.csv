@@ -1,0 +1,3 @@
+BatteryID,Statistic,Observed,CI95Lower,CI95Upper,Replicates,BlockRule,CIExcludesZeroInImprovementDirection
+B0007,median_seed_paired_RMSE_delta_CILA_minus_Original,-0.00010010682193084541,-0.00036431755485467063,-3.3388971751424967e-06,5000,"circular blocks; length=max(3,round(sqrt(n_cycles)))",True
+B0018,median_seed_paired_RMSE_delta_CILA_minus_Original,-0.000785895532452674,-0.0008825866636126723,-0.0006613367496712709,5000,"circular blocks; length=max(3,round(sqrt(n_cycles)))",True

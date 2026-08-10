@@ -1,0 +1,24 @@
+{
+  "mode": "coral",
+  "lambda_align": 0.1,
+  "lambda_weight": 0.1,
+  "seed": 42,
+  "epochs": 150,
+  "patience": 30,
+  "domains": {
+    "B0043": "C:\\Users\\ROG\\Documents\\Python\\soh02\\output\\ieee_innovation_v1\\phase4\\outer_smoke_retry\\branches\\B0043\\none",
+    "B0044": "C:\\Users\\ROG\\Documents\\Python\\soh02\\output\\ieee_innovation_v1\\phase4\\outer_smoke_retry\\branches\\B0044\\none"
+  },
+  "input_sha256": {
+    "B0043/train": "a88fddbae065e96135d7063aca61508f4e6ff7558cdcc56b99291fb23ea2c199",
+    "B0043/val": "46fd46428d67d259e4c66c0887db740b0fdd32d0e365bf1e7ac419c3e2d4bf93",
+    "B0044/train": "7e6488ba7221f86c3aa672368c863be5c1581e9bc016bfba54d53008152c79bf",
+    "B0044/val": "818debf7c9ce878898ebbe642c14c0dd5e8da5e3bb337fc456699b5aaa329691"
+  },
+  "architecture": "unchanged AttentionBiLSTMFusion paper mode",
+  "alignment": "pairwise CORAL on pooled-standardized existing temporal context",
+  "evaluate_test": false,
+  "validate_only": true,
+  "stable_init": true,
+  "config_hash": "7b4f927a70ae7e1be50057b8fc120e1cec718505c8b8dbd158660ca44d440284"
+}

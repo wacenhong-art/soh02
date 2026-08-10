@@ -1,0 +1,3 @@
+﻿BatteryID,RawRows,TrainRows,AugmentedRows,Datasets,CycleMin,CycleMax,AllTrajectoriesContinuous,LabelsMatchRealTrainingPrefix,ValidationOrTestRowsAugmented,AugmentedCSV_SHA256
+B0043,88,52,312,6,0,51,True,True,False,88f53a3086bbb4b0b8eb952daddeb1c68bd04e6b9f949718b00e3561d8a5bb1f
+B0044,88,52,312,6,0,51,True,True,False,b4e3fb79d2059c2a9475265b6e600b58f82e588bb41386ddfedf03d051ece016

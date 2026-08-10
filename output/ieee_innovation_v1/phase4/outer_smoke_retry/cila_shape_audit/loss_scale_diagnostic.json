@@ -1,0 +1,7 @@
+{
+  "InitialPredictionLoss": 0.7555650472640991,
+  "InitialCORAL": 0.1997387707233429,
+  "WeightedCORAL": 0.019973877072334292,
+  "WeightedCORALToPredictionRatio": 0.026435681672490934,
+  "DomainsPerBatch": 2
+}

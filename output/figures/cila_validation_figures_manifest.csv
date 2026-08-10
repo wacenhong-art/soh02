@@ -1,0 +1,5 @@
+﻿Figure,Stage
+cila_paired_rmse_validation_v1.png,validation
+cila_delta_bootstrap_validation_v1.png,validation
+cila_domain_separability_validation_v1.png,validation
+cila_outer_split_lock_v1.png,outer-lock

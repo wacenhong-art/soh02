@@ -13,8 +13,8 @@
   "scf_gan_sources": ["B0005", "B0006"],
   "development_domains": ["B0007", "B0018"],
   "development_split": [0.6, 0.2, 0.2],
-  "outer_test_domains": ["B0049", "B0050", "B0051", "B0052"],
-  "outer_selection_basis": "metadata-only: 4C, constant-current 2A, cutoff-voltage family",
+  "outer_test_domains": ["B0043", "B0044"],
+  "outer_selection_basis": "metadata plus frozen-HF compatibility only: 4C, mixed 4A/1A, sufficient two-stage windows",
   "outer_results_inspected_before_lock": false,
   "zero_label_cross_battery": false,
   "test_tuning_forbidden": true,
@@ -30,4 +30,12 @@
   ,"one_seed_screen_completed": true
   ,"three_seed_candidate_lambda": 0.1
   ,"one_seed_effect_interpretation": "numerically_tiny_not_evidence"
+  ,"five_seed_validation_completed": true
+  ,"validation_selected_lambda": 0.1
+  ,"validation_direction_gate": "PASS"
+  ,"validation_practical_effect": "WEAK"
+  ,"validation_negative_transfer_warning": "B0007 seed72"
+  ,"configuration_locked": true
+  ,"config_hash": "9b5a4dc40e9cf03b8f73ae3f60362b2abe899757a4adfca6325072f5a1ba814f"
+  ,"outer_replacements_before_inference": ["B0049-B0052 length infeasible", "B0053-B0056 frozen-HF incompatible"]
 }

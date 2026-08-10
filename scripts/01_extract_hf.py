@@ -14,7 +14,7 @@ CUTOFF_CURR = 0.02
 os.makedirs(SAVE_CSV_PATH, exist_ok=True)
 
 
-def smooth_feature_outliers(df, columns=("HF1", "HF2", "HF3"), window=7, threshold=4.0):
+def smooth_feature_outliers(df, columns=("HF1", "HF2", "HF3"), window=7, threshold=4.0, verbose=True):
     """Replace isolated extraction glitches using a causal-data-safe Hampel filter."""
     out = df.copy()
     for col in columns:
@@ -26,7 +26,8 @@ def smooth_feature_outliers(df, columns=("HF1", "HF2", "HF3"), window=7, thresho
         bad = (series <= 0) | ((scale > 0) & (deviation > threshold * scale))
         out.loc[bad, col] = np.nan
         out[col] = out[col].interpolate(limit_direction="both")
-        print(f"{col} Hampel修复异常点：{int(bad.sum())}")
+        if verbose:
+            print(f"{col} Hampel修复异常点：{int(bad.sum())}")
     return out
 
 def calc_h_features(voltage, current, time_seq):
@@ -50,9 +51,8 @@ def calc_h_features(voltage, current, time_seq):
     hf3 = time_seq[idx_40] - time_seq[idx_38]
     return hf1, hf2, hf3
 
-def single_battery_extract(battery_name):
-    mat_file = os.path.join(RAW_MAT_PATH, f"{battery_name}.mat")
-    mat_data = loadmat(mat_file)
+def extract_battery_frame(mat_data, battery_name, verbose=True):
+    """Extract the paper health features from an already loaded MAT mapping."""
     raw_data = mat_data[battery_name][0, 0]
     cycle_arr = raw_data["cycle"][0]
     # 兼容一维cycle数组
@@ -95,12 +95,20 @@ def single_battery_extract(battery_name):
             soh = real_cap / NOMINAL_CAP
             feature_record.append([hf1, hf2, hf3, soh])
         except Exception as err:
-            print(f"跳过{battery_name}第{cycle_idx}圈，异常：{str(err)}")
+            if verbose:
+                print(f"跳过{battery_name}第{cycle_idx}圈，异常：{str(err)}")
             continue
+    df_out = pd.DataFrame(feature_record, columns=["HF1", "HF2", "HF3", "SOH"])
+    df_out = smooth_feature_outliers(df_out, verbose=verbose)
+    return df_out
+
+
+def single_battery_extract(battery_name):
+    mat_file = os.path.join(RAW_MAT_PATH, f"{battery_name}.mat")
+    mat_data = loadmat(mat_file)
+    df_out = extract_battery_frame(mat_data, battery_name)
     # 修复变量名：使用battery_name
     save_path = os.path.join(SAVE_CSV_PATH, f"{battery_name}_hf.csv")
-    df_out = pd.DataFrame(feature_record, columns=["HF1", "HF2", "HF3", "SOH"])
-    df_out = smooth_feature_outliers(df_out)
     df_out.to_csv(save_path, index=False, encoding="utf-8-sig")
     print(f"==== {battery_name} 提取完成，有效循环：{len(df_out)} ====")
 
