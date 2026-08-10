@@ -1,0 +1,4 @@
+﻿rank,candidate_id,candidate,mechanism,real_world_value_25,gmtc_fit_25,data_feasibility_20,research_gap_15,isolated_ablation_10,cost_5,total_100,decision,main_risk
+1,CILA,Condition-Invariant Latent Alignment（条件不变潜表示对齐）,在现有三分支送入Attention Bi-LSTM前的潜表示上增加训练域间CORAL协方差对齐损失；不增加预测网络。,24,22,19,14,9,4,92,唯一推荐，等待用户确认,工况与电池身份混杂；过强对齐可能抹去SOH相关退化特征并造成负迁移。
+2,UQ,Uncertainty-aware calibration（不确定性校准）,为现有预测增加异方差或后验校准，输出误差区间。,22,17,16,13,8,3,79,不选,改变输出与训练目标，且当前小样本不足以证明区间校准在外部工况可靠。
+3,PWR,Partial-window robustness（部分充电窗口鲁棒性）,对现有健康特征窗口做掩码/截断一致性训练。,20,20,18,7,9,4,78,不选,原论文已以部分充电健康特征为前提，新增性有限，容易变成数据增强细节。

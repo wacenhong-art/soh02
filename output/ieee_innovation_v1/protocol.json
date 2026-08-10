@@ -1,6 +1,6 @@
 {
   "schema": "ieee_innovation_phase1/1",
-  "status": "waiting_user_confirmation",
+  "status": "waiting_innovation_confirmation",
   "created_at": "2026-08-10T02:05:13.496726+08:00",
   "git_baseline": "3d55f12",
   "literature_window": {
@@ -8,7 +8,7 @@
     "to": "2026-08-10"
   },
   "literature_provider_required": "Sider Scholar",
-  "literature_search_started": false,
+  "literature_search_started": true,
   "source_archives_read_only": true,
   "formal_outer_test_selected": false,
   "B0007_B0018_status": "previously_contacted_development_evaluation",
@@ -44,5 +44,17 @@
     "B0055",
     "B0056"
   ],
-  "model_code_modified": false
+  "model_code_modified": false,
+  "phase2_completed_at": "2026-08-10T08:25:12.053589+08:00",
+  "literature_search_completed": true,
+  "sider_scholar_used": true,
+  "first_round_candidate_count": 103,
+  "deep_read_verified_count": 10,
+  "phase3_synthesis_started": true,
+  "innovation_selected": false,
+  "phase3_completed_at": "2026-08-10T08:33:02.399477+08:00",
+  "phase3_gate": "PASS_WITH_MANDATORY_SAFEGUARDS",
+  "recommended_innovation_id": "CILA",
+  "recommended_innovation_score": 92,
+  "candidate_model_errors_inspected": false
 }
