@@ -1,0 +1,17 @@
+{
+  "schema": "formal_outer_progress/1",
+  "config_hash": "797a026852b95eecdc1ce2a284d21396bd95df0df5ba66e533805076d8933a10",
+  "test_metrics_now_inspected": true,
+  "test_tuning_prohibited": true,
+  "seed_42": {
+    "branches": "completed",
+    "original_pooled": "not_started_approval_transport_failure",
+    "cila_pooled": "not_started",
+    "branch_metrics": {
+      "B0043": {"RMSE": 46.11950551624009, "MAE": 39.49738693237305, "MAPE": 542.312, "R2": -6.5991621017456055},
+      "B0044": {"RMSE": 29.194231649781326, "MAE": 21.434669494628906, "MAPE": 300.80157, "R2": -2.2487428188323975}
+    }
+  },
+  "seeds_52_62_72_82": "not_started",
+  "innovation_effect_available": false
+}
