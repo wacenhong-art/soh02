@@ -1,0 +1,2 @@
+AttemptID,Stage,ConfigHash,Seed,Change,Reason,ValidationRMSE_B0007,ValidationRMSE_B0018,PromotionGate,TestResultsViewed,Status
+A001,A_representation,0103d158f40320aef01aa9a563242c59e7412b183d2dfc5a30ace62162383f44,42,"论文20%小样本A阶段冒烟","验证参数化边界、原始三分量路径和数值稳定性",4.80026950079612,5.190407730874303,"not_applicable_smoke_only",false,"completed_not_promoted"
