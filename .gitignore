@@ -1,0 +1,4 @@
+# Large, immutable external raw archives are retained locally for auditable
+# preprocessing but must not be committed with source code or experiment logs.
+data/external/
+scripts/__pycache__/

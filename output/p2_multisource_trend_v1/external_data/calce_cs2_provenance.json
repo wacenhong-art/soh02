@@ -1,0 +1,13 @@
+{
+  "schema": "external_source_audit/1",
+  "source": "CALCE CS2_3 official archive",
+  "archive": "C:\\Users\\ROG\\Documents\\Python\\soh02\\data\\external\\calce\\CS2_3.zip",
+  "archive_bytes": 235649043,
+  "files_seen": 39,
+  "files_with_cycle_statistics": 14,
+  "raw_data_policy": "read-only; ignored by Git; never used for confirmation/test selection",
+  "eligibility": "not yet approved for P2 pretraining; requires raw charge-curve HF1/HF2/HF3 extraction and cross-file trajectory stitching audit",
+  "confirmation_holdout_untouched": [
+    "B0033"
+  ]
+}
