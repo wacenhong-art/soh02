@@ -64,6 +64,10 @@ def main() -> None:
         engine.ts.STL_PERIOD = int(t["stl_period"])
         engine.ts.LR = .001; engine.ts.WEIGHT_DECAY = 1e-5; engine.ts.BATCH_SIZE = 32
         config_dir = out / f"{config['attempt_id']}_{config['config_hash'][:10]}"
+        # Component and fusion routines write nested per-configuration files.
+        # Creating this boundary upfront lets every failed/successful attempt
+        # keep isolated artifacts without falling back to a shared directory.
+        config_dir.mkdir(parents=True, exist_ok=True)
         try:
             metrics = []
             for battery in fixed["target_batteries"]:

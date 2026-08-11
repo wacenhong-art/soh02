@@ -1,0 +1,9 @@
+{
+  "stage": "A_representation",
+  "seed": 42,
+  "epochs": 20,
+  "patience": 8,
+  "config_count": 144,
+  "test_labels_loaded": false,
+  "status": "completed"
+}
