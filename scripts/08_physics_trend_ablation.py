@@ -186,14 +186,22 @@ def metric_row(battery, mode, lam, evaluated_split, true, pred, trend_pred, true
 
 def run_battery(battery, modes, lam, epochs, patience, out_dir, seed, evaluation_split,
                 fusion_stable_init=False, use_component_lag=True,
-                clip_recursive_state=False):
+                clip_recursive_state=False, train_fraction=.6, validation_fraction=.2,
+                model_config=None):
     raw = pd.read_csv(ROOT / "data" / "hf_csv" / f"{battery}_hf.csv")
     raw = raw[HF_COLS + ["SOH"]].apply(pd.to_numeric, errors="coerce").dropna().reset_index(drop=True)
     aug_path = ROOT / "output" / f"{battery}_aug_train_hf.csv"
     if not aug_path.exists():
         raise FileNotFoundError(f"缺少 {aug_path.name}；请先用SCF-GAN为该目标电池生成训练增强数据")
     aug = pd.read_csv(aug_path).dropna().reset_index(drop=True)
-    n = len(raw); train_end, val_end = int(n * .6), int(n * .8)
+    if not 0 < train_fraction < 1 or not 0 < validation_fraction < 1 or train_fraction + validation_fraction >= 1:
+        raise ValueError("训练/验证比例必须为正且和小于1")
+    n = len(raw); train_end = int(n * train_fraction); val_end = int(n * (train_fraction + validation_fraction))
+    model_config = model_config or {}
+    times_width = int(model_config.get("timesnet_width", 64))
+    times_top_k = int(model_config.get("timesnet_top_k", 3))
+    itransformer_heads = int(model_config.get("itransformer_heads", 4))
+    itransformer_layers = int(model_config.get("itransformer_layers", 2))
     soh_full = raw["SOH"].to_numpy(np.float32) * 100
     # Split first, then decompose: validation/test SOH must not influence any
     # component target, scaler, model parameter, or recursive state.
@@ -225,11 +233,14 @@ def run_battery(battery, modes, lam, epochs, patience, out_dir, seed, evaluation
             fit_aug, norm, lag, values, mean, std, use_component_lag
         )
         if name == "Residual":
-            model = ts.iTransformer().to(DEVICE)
+            model = ts.iTransformer(seq_len=ts.SEQ_LEN, d_model=times_width,
+                                    nhead=itransformer_heads, layers=itransformer_layers).to(DEVICE)
         elif name == "Seasonal":
-            model = ts.TimesNet(input_dim=4 if use_component_lag else 3).to(DEVICE)
+            model = ts.TimesNet(input_dim=4 if use_component_lag else 3,
+                                d_model=times_width, top_k=times_top_k).to(DEVICE)
         else:
-            model = ts.TimesNet(input_dim=4 if use_component_lag else 3).to(DEVICE)
+            model = ts.TimesNet(input_dim=4 if use_component_lag else 3,
+                                d_model=times_width, top_k=times_top_k).to(DEVICE)
         model, best = train_component(model, trajectories,
                                       (norm_hf, values, component_fit_end, train_end),
                                       mode if name == "Trend" else "none",
@@ -304,7 +315,9 @@ def run_battery(battery, modes, lam, epochs, patience, out_dir, seed, evaluation
         "ValidationLabelsUsedForComponentTraining": False,
         "ComponentInput": "HF1/HF2/HF3+lagged-component" if use_component_lag else "HF1/HF2/HF3-only",
         "RecursiveStateClippedToTrainRange": bool(clip_recursive_state),
-        "Protocol": "target-first-60%-labeled-adaptation; next-20%-validation; last-20%-strict-test"}
+        "Protocol": f"target-first-{train_fraction:.0%}-labeled-adaptation; next-{validation_fraction:.0%}-validation; remainder-strict-test",
+        "ModelConfig": {"timesnet_width": times_width, "timesnet_top_k": times_top_k,
+                        "itransformer_heads": itransformer_heads, "itransformer_layers": itransformer_layers}}
 
 
 def main():

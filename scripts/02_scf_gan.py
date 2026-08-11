@@ -16,6 +16,7 @@ OUTPUT_PATH = os.path.join(ROOT_PATH, "output")
 TARGET_BATTERY = os.getenv("TARGET_BATTERY", "B0018").strip()
 SCF_ACTION = os.getenv("SCF_GAN_ACTION", "both").strip().lower()
 SCF_SEED = int(os.getenv("SCF_GAN_SEED", "42"))
+TARGET_TRAIN_FRACTION = float(os.getenv("TARGET_TRAIN_FRACTION", "0.6"))
 os.makedirs(MODEL_SAVE, exist_ok=True)
 os.makedirs(OUTPUT_PATH, exist_ok=True)
 
@@ -207,7 +208,9 @@ def generate_aug_data():
     for col in ["HF1","HF2","HF3","SOH"]:
         df_raw[col] = df_raw[col].apply(clean_num)
     df_raw = df_raw.dropna()
-    train_len = int(len(df_raw) * 0.6)
+    if not 0 < TARGET_TRAIN_FRACTION < 1:
+        raise ValueError("TARGET_TRAIN_FRACTION 必须在(0,1)内")
+    train_len = int(len(df_raw) * TARGET_TRAIN_FRACTION)
     train_df = df_raw.iloc[:train_len].reset_index(drop=True)
     cycle_cond = np.arange(train_len, dtype=np.float32) / max(len(df_raw) - 1, 1)
     rows = []
