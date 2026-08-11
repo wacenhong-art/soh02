@@ -1,0 +1,55 @@
+{
+  "schema": "p2_grid_config/1",
+  "frozen": {
+    "p1_commit": "18c71e0",
+    "scf_gan_sources": [
+      "B0005",
+      "B0006"
+    ],
+    "development_targets": [
+      "B0007",
+      "B0018"
+    ],
+    "confirmation_holdout": [
+      "B0033"
+    ],
+    "excluded_contacted": [
+      "B0007",
+      "B0018",
+      "B0034",
+      "B0036",
+      "B0043",
+      "B0044"
+    ],
+    "target_adaptation_split": "first60/train,next20/validation,last20/not-accessed",
+    "architecture": "STL -> original TimesNet Trend + original TimesNet Seasonal + iTransformer Residual -> paper Attention Bi-LSTM",
+    "forbidden_changes": [
+      "SCF-GAN algorithm",
+      "target/test labels as features",
+      "test-set parameter selection",
+      "P1 architecture replacement",
+      "B0033 pretraining"
+    ]
+  },
+  "tunable": {
+    "trend_width": 64,
+    "pretrain_learning_rate": 0.0003,
+    "finetune_learning_rate": 0.0001,
+    "weight_decay": 1e-05,
+    "batch_size": 32,
+    "source_sampling": "condition_balanced"
+  },
+  "fixed_training_controls": {
+    "pretrain_epoch_cap": 150,
+    "finetune_epoch_cap": 100,
+    "early_stopping_patience": 20,
+    "sequence_length": 10,
+    "optimizer": "AdamW",
+    "gradient_clip_norm": 1.0,
+    "fusion_stable_init": true,
+    "seed_for_coarse_screen": 42,
+    "selection_metric": "mean validation RMSE across B0007 and B0018",
+    "selection_rule": "both batteries must improve versus fixed P1; rank by mean paired delta"
+  },
+  "config_hash": "5a869cb134a8e4d5fe6b0a716ab593e9bd370216e0c85e87f3ed3dbd39e93875"
+}
