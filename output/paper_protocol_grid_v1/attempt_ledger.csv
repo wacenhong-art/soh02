@@ -1,2 +1,3 @@
 AttemptID,Stage,ConfigHash,Seed,Change,Reason,ValidationRMSE_B0007,ValidationRMSE_B0018,PromotionGate,TestResultsViewed,Status
 A001,A_representation,0103d158f40320aef01aa9a563242c59e7412b183d2dfc5a30ace62162383f44,42,"论文20%小样本A阶段冒烟","验证参数化边界、原始三分量路径和数值稳定性",4.80026950079612,5.190407730874303,"not_applicable_smoke_only",false,"completed_not_promoted"
+A080,A_representation,cfb3bf3c8c84f80a6c03cd9d261bf6d098ca714317aa3b39f23667172038086c,42,"论文结构参考配置20%小样本冒烟","建立原始TimesNet/iTransformer默认结构的同协议参考",4.849346763667951,5.923309108936657,"not_applicable_smoke_only",false,"completed_not_promoted"
