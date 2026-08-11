@@ -158,7 +158,10 @@ def make_trajectories(aug, norm, component_state, values, mean, std,
         if use_component_lag:
             gx = np.concatenate([gx, component_state[cycles]], axis=1).astype(np.float32)
         gy = (values[cycles] - mean) / std
-        result.append(ts.windows(gx, gy))
+        # ``windows`` has a legacy default captured at module import.  Pass the
+        # active grid value explicitly so non-default sequence lengths reach
+        # both TimesNet and iTransformer with identical temporal dimensions.
+        result.append(ts.windows(gx, gy, seq_len=ts.SEQ_LEN))
     return result
 
 
