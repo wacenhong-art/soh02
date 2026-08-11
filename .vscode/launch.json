@@ -1,0 +1,41 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "论文网格 A080（验证冒烟）",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/56_run_paper_grid_smoke.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "args": [
+        "--config",
+        "${workspaceFolder}/output/paper_protocol_grid_v1/configs/A_representation/A080_cfb3bf3c8c.json",
+        "--epochs",
+        "20",
+        "--patience",
+        "8",
+        "--seed",
+        "42"
+      ]
+    },
+    {
+      "name": "论文网格 A001（验证冒烟）",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/56_run_paper_grid_smoke.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "args": [
+        "--config",
+        "${workspaceFolder}/output/paper_protocol_grid_v1/configs/A_representation/A001_0103d158f4.json",
+        "--epochs",
+        "20",
+        "--patience",
+        "8",
+        "--seed",
+        "42"
+      ]
+    }
+  ]
+}
