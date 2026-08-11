@@ -1,0 +1,16 @@
+{
+  "schema": "pcstl_validation_lock/1",
+  "created_at": "2026-08-11T17:53:10.430315",
+  "phase": "development_validation",
+  "seeds": [
+    42,
+    52,
+    62
+  ],
+  "mu": 1.0,
+  "test_results_accessed": false,
+  "configuration_locked_for_confirmation": false,
+  "three_seed_gate_passed": false,
+  "reason": "B0018 did not improve in at least two of three seeds; five-seed and confirmation tests are prohibited.",
+  "metrics_sha256": "e36d334e6d6419a5f25a12db4af52be1880a886265cbfecd29b325059d255ffc"
+}

@@ -1,0 +1,2 @@
+﻿BatteryID,Seed,Branch,Mu,EvaluatedSplit,RMSE,MAE,MAPE,R2,TrendViolationRate,TrendMeanPositiveJump,TrendMaxPositiveJump,TrendMeanAbsSecondDifference,STLReconstructionMaxAbsError,StableAttentionInit,TestLabelsUsedAsFeatures
+B0007,42,pcstl,0.1,validation,11.086446443758463,10.992054747911187,14.431865689480054,-63.634795041025,0.18181818181818182,0.034152984619140625,0.0616455078125,0.064239501953125,0.0,False,False

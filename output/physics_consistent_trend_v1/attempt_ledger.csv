@@ -1,0 +1,2 @@
+﻿AttemptID,Timestamp,Change,Reason,Stage,TestResultsViewed,FailedGate
+PCSTL-D03,2026-08-11T17:53:10.467026,"training-only monotonic smooth STL Trend reconstruction, mu=1.0",isolated alternative after soft physics-loss failure,three-seed development validation,False,three_seed_cross_battery_consistency

@@ -1,0 +1,3 @@
+﻿BatteryID,Rows,TrainEndExclusive,ValidationEndExclusive,TestRows,STLTrainOnly,STLTrainReconstructionError,EnoughForTwo10StepStages
+B0007,168,100,134,34,True,1.4210854715202004e-14,True
+B0018,128,76,102,26,True,0.0,True

@@ -1,0 +1,26 @@
+{
+  "schema": "pcstl/1",
+  "timestamp": "2026-08-11T17:51:46.023681",
+  "batteries": [
+    "B0007",
+    "B0018"
+  ],
+  "branches": "p0,pcstl",
+  "mu": 1.0,
+  "seed": 62,
+  "epochs": 40,
+  "patience": 10,
+  "split": "validation",
+  "stable_init": true,
+  "architecture": "STL -> original TimesNet Trend + original TimesNet Seasonal + iTransformer Residual -> paper Attention Bi-LSTM",
+  "innovation": "training-only monotonic smooth Trend target; correction reallocated to Residual",
+  "final_soh_constrained": false,
+  "scf_gan_changed": false,
+  "test_used_for_selection": false,
+  "artifacts": {
+    "scripts\\03_time_series.py": "0e933d6bd590ed369864fe63220429cb7e43cf804fa37b9db604189298081715",
+    "scripts\\04_attention_fusion.py": "871e0e65ddc8482d34e229dc9c73b95c2f18360b5c86e50336ba65e8a2218061",
+    "scripts\\02_scf_gan.py": "c28effa6941e1d52a95334e169ab3ebd5863f686a857ee74884ea4eaef161d9b"
+  },
+  "config_hash": "b953fa015768d37c0a8379ccb31741da5d9765f49df6a0e6c4c5e8106d2e8808"
+}
