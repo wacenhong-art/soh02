@@ -1,0 +1,67 @@
+{
+  "schema": "paper_protocol_grid_config/1",
+  "stage": "A_representation",
+  "paper_fixed": {
+    "scf_gan_source_batteries": [
+      "B0005",
+      "B0006"
+    ],
+    "target_batteries": [
+      "B0007",
+      "B0018"
+    ],
+    "target_labeled_prefix_fraction": 0.2,
+    "synthetic_trajectories_per_target": 5,
+    "scf_gan_noise_dim": 8,
+    "scf_gan_condition_dim": 2,
+    "scf_gan_feature_dim": 3,
+    "scf_gan_hidden_width": 256,
+    "scf_gan_feature_matching_lambda": 0.1,
+    "scf_gan_learning_rate": 0.001,
+    "scf_gan_batch_size": 32,
+    "scf_gan_epochs": 800,
+    "trend_model": "original TimesNet",
+    "seasonal_model": "original TimesNet",
+    "residual_model": "iTransformer",
+    "fusion_model": "Attention Bi-LSTM",
+    "physics_mode": "none",
+    "lambda_phy": 0.0,
+    "forbidden": [
+      "lightweight TimesNet",
+      "OSELM",
+      "causal multirate",
+      "transfer learning",
+      "PINN",
+      "final SOH constraint"
+    ]
+  },
+  "tunable": {
+    "sequence_length": 10,
+    "stl_period": 12,
+    "timesnet_width": 64,
+    "timesnet_top_k": 3,
+    "itransformer_heads": 4,
+    "itransformer_layers": 1
+  },
+  "repeat_control": {
+    "coarse_seed": 42,
+    "promotion_seeds": [
+      42,
+      52,
+      62
+    ],
+    "final_validation_seeds": [
+      42,
+      52,
+      62,
+      72,
+      82
+    ],
+    "selection_metric": "mean validation RMSE across B0007 and B0018",
+    "selection_rule": "same configuration must improve the validation RMSE of both targets; rank only after this gate"
+  },
+  "data_boundary": "B0007/B0018: prefix 20% train, validation split must be predefined inside remaining development portion; target test is never loaded during selection",
+  "execution_gate": "requires parameterized paper-protocol runner; current legacy scripts hard-code B0018 and 60/20/20",
+  "config_hash": "1c735e1a96213af32a050fc67c428cc96030a5cb7d72f8e4a58c29510cbb8907",
+  "attempt_id": "A079"
+}

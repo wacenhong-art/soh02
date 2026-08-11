@@ -1,0 +1,149 @@
+{
+  "schema": "paper_protocol_grid/1",
+  "created_at": "2026-08-11T19:00:02.426056",
+  "paper_fixed": {
+    "scf_gan_source_batteries": [
+      "B0005",
+      "B0006"
+    ],
+    "target_batteries": [
+      "B0007",
+      "B0018"
+    ],
+    "target_labeled_prefix_fraction": 0.2,
+    "synthetic_trajectories_per_target": 5,
+    "scf_gan_noise_dim": 8,
+    "scf_gan_condition_dim": 2,
+    "scf_gan_feature_dim": 3,
+    "scf_gan_hidden_width": 256,
+    "scf_gan_feature_matching_lambda": 0.1,
+    "scf_gan_learning_rate": 0.001,
+    "scf_gan_batch_size": 32,
+    "scf_gan_epochs": 800,
+    "trend_model": "original TimesNet",
+    "seasonal_model": "original TimesNet",
+    "residual_model": "iTransformer",
+    "fusion_model": "Attention Bi-LSTM",
+    "physics_mode": "none",
+    "lambda_phy": 0.0,
+    "forbidden": [
+      "lightweight TimesNet",
+      "OSELM",
+      "causal multirate",
+      "transfer learning",
+      "PINN",
+      "final SOH constraint"
+    ]
+  },
+  "stages": {
+    "A_representation": {
+      "sequence_length": [
+        8,
+        10,
+        12
+      ],
+      "stl_period": [
+        8,
+        12,
+        16
+      ],
+      "timesnet_width": [
+        32,
+        64
+      ],
+      "timesnet_top_k": [
+        2,
+        3
+      ],
+      "itransformer_heads": [
+        2,
+        4
+      ],
+      "itransformer_layers": [
+        1,
+        2
+      ]
+    },
+    "B_optimizer": {
+      "component_learning_rate": [
+        0.0003,
+        0.001,
+        0.003
+      ],
+      "component_batch_size": [
+        16,
+        32
+      ],
+      "component_weight_decay": [
+        1e-05,
+        0.0001
+      ],
+      "component_epoch_cap": [
+        400,
+        800
+      ],
+      "component_patience": [
+        50,
+        100
+      ],
+      "gradient_clip_norm": [
+        0.5,
+        1.0
+      ]
+    },
+    "C_fusion": {
+      "fusion_hidden_size": [
+        8,
+        16,
+        32
+      ],
+      "fusion_learning_rate": [
+        0.0003,
+        0.001,
+        0.003
+      ],
+      "fusion_weight_decay": [
+        1e-05,
+        0.0001
+      ],
+      "fusion_weight_regularization": [
+        0.001,
+        0.01,
+        0.1
+      ],
+      "fusion_epoch_cap": [
+        400,
+        800
+      ],
+      "fusion_patience": [
+        50,
+        100
+      ]
+    }
+  },
+  "repeat_control": {
+    "coarse_seed": 42,
+    "promotion_seeds": [
+      42,
+      52,
+      62
+    ],
+    "final_validation_seeds": [
+      42,
+      52,
+      62,
+      72,
+      82
+    ],
+    "selection_metric": "mean validation RMSE across B0007 and B0018",
+    "selection_rule": "same configuration must improve the validation RMSE of both targets; rank only after this gate"
+  },
+  "stage_order": [
+    "A_representation",
+    "B_optimizer",
+    "C_fusion"
+  ],
+  "lock_rule": "lock the winning hash after each stage before beginning the next; do not form a cross-stage Cartesian product",
+  "test_rule": "after five-seed validation lock, a formal test is run once; its result cannot create a new configuration",
+  "protocol_hash": "0e884295d31df1e094feb5aa1ede42f031244c4dd0fca458c493e08b45c4ca26"
+}
