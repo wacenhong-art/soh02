@@ -1,0 +1,28 @@
+{
+  "schema": "fixed_p1_baseline/1",
+  "status": "frozen_after_diagnosis",
+  "architecture": "STL -> original TimesNet Trend + original TimesNet Seasonal + iTransformer Residual -> paper Attention Bi-LSTM",
+  "stabilization": "additive-reconstruction initialization only; shared by all future controls and proposals",
+  "excluded": [
+    "physics loss",
+    "Ridge Trend anchor",
+    "OSELM",
+    "causal multirate",
+    "transfer learning",
+    "IPRF fusion"
+  ],
+  "input": "direct observed HF windows; no recursive component feedback",
+  "training_protocol": "target first 60% labelled adaptation; next 20% development validation; last 20% not accessed here",
+  "seeds_observed": [
+    42,
+    52,
+    62
+  ],
+  "diagnostic_test_access": false,
+  "code_sha256": {
+    "scripts/02_scf_gan.py": "c28effa6941e1d52a95334e169ab3ebd5863f686a857ee74884ea4eaef161d9b",
+    "scripts/03_time_series.py": "0e933d6bd590ed369864fe63220429cb7e43cf804fa37b9db604189298081715",
+    "scripts/04_attention_fusion.py": "871e0e65ddc8482d34e229dc9c73b95c2f18360b5c86e50336ba65e8a2218061",
+    "scripts/49_physics_consistent_trend.py": "d4f41dee9f515ff6f0703468001957800b241a2acd96fc8c41fb09d9993cad8b"
+  }
+}

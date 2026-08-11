@@ -1,0 +1,7 @@
+﻿BatteryID,Seed,TrainEnd,ValidationEnd,PredictedCycleMin,PredictedCycleMax,NoCrossBoundary,TestRowsRead
+B0007,42,100,134,100,133,True,False
+B0007,52,100,134,100,133,True,False
+B0007,62,100,134,100,133,True,False
+B0018,42,76,102,76,101,True,False
+B0018,52,76,102,76,101,True,False
+B0018,62,76,102,76,101,True,False
