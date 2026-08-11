@@ -134,6 +134,12 @@ class Discriminator(nn.Module):
 
 # SCF-GAN训练函数（论文损失：对抗损失+0.1特征匹配损失）
 def train_scf_gan():
+    # The function is also imported by the grid runner, so seed here rather
+    # than only in the legacy __main__ path.
+    np.random.seed(SCF_SEED)
+    torch.manual_seed(SCF_SEED)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(SCF_SEED)
     dataset = BatteryHFDataset()
     with open(SCALER_PATH, "w", encoding="utf-8") as f:
         json.dump({"min": dataset.feature_min.tolist(), "max": dataset.feature_max.tolist()}, f)

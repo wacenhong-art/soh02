@@ -36,6 +36,15 @@
         "--seed",
         "42"
       ]
+    },
+    {
+      "name": "论文网格 A阶段全部144组（验证专用）",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/57_run_paper_grid_stage.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "args": ["--stage", "A_representation", "--epochs", "20", "--patience", "8", "--seed", "42"]
     }
   ]
 }
