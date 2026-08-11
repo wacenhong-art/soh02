@@ -1,0 +1,26 @@
+{
+  "schema": "p2_source_pool_lock/1",
+  "created_at": "2026-08-11T18:41:12.748392",
+  "full_nasa_hf_definition": "frozen HF1/HF2/HF3 extractor and SEQ_LEN=10",
+  "feasible_batteries": [
+    "B0034",
+    "B0036",
+    "B0033",
+    "B0043",
+    "B0044"
+  ],
+  "previously_contacted": [
+    "B0007",
+    "B0018",
+    "B0034",
+    "B0036",
+    "B0043",
+    "B0044"
+  ],
+  "confirmation_reserved": [
+    "B0033"
+  ],
+  "eligible_multisource_pretraining_batteries": [],
+  "P2StartAllowed": false,
+  "blocker": "No unused NASA battery remains both HF/window-feasible and outside the confirmation holdout."
+}
