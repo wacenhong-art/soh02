@@ -2,3 +2,9 @@
 # preprocessing but must not be committed with source code or experiment logs.
 data/external/
 scripts/__pycache__/
+__pycache__/
+*.py[cod]
+
+# Validation/training runs are reproducible artifacts, not source files.
+output/**/runs/
+output/**/batch_runs/

@@ -10,6 +10,7 @@ import importlib.util
 import json
 import os
 import random
+import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -17,11 +18,14 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from statsmodels.tsa.seasonal import STL
 from torch.utils.data import DataLoader
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from soh_pipeline.evaluation import evaluate_regression, make_lifecycle_split
+
 SPEC = importlib.util.spec_from_file_location("time_series", ROOT / "scripts" / "03_time_series.py")
 ts = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(ts)
@@ -170,13 +174,10 @@ def metric_row(battery, mode, lam, evaluated_split, true, pred, trend_pred, true
     positive = delta[delta > 0]
     second = np.diff(trend_pred, n=2)
     true_delta = np.diff(true_trend)
+    metrics = evaluate_regression(true, pred)
     return {"BatteryID": battery, "EvaluatedSplit": evaluated_split,
             "PhysicsMode": mode, "LambdaPhy": lam,
-            "RMSE": mean_squared_error(true, pred) ** 0.5,
-            "MAE": mean_absolute_error(true, pred),
-            # Paper Eq. (30): sum absolute error divided by sum reference SOH.
-            "MAPE": np.sum(np.abs(true - pred)) / np.maximum(np.sum(np.abs(true)), 1e-8) * 100,
-            "R2": r2_score(true, pred),
+            **metrics,
             "TrendViolationRate": float(np.mean(delta > 0)) if len(delta) else 0.0,
             "TrendToleranceEpsilon": float(epsilon),
             "TrendToleranceViolationRate": float(np.mean(delta > epsilon)) if len(delta) else 0.0,
@@ -197,9 +198,9 @@ def run_battery(battery, modes, lam, epochs, patience, out_dir, seed, evaluation
     if not aug_path.exists():
         raise FileNotFoundError(f"缺少 {aug_path.name}；请先用SCF-GAN为该目标电池生成训练增强数据")
     aug = pd.read_csv(aug_path).dropna().reset_index(drop=True)
-    if not 0 < train_fraction < 1 or not 0 < validation_fraction < 1 or train_fraction + validation_fraction >= 1:
-        raise ValueError("训练/验证比例必须为正且和小于1")
-    n = len(raw); train_end = int(n * train_fraction); val_end = int(n * (train_fraction + validation_fraction))
+    n = len(raw)
+    split = make_lifecycle_split(n, train_fraction, validation_fraction)
+    train_end, val_end = split.train_end, split.validation_end
     model_config = model_config or {}
     times_width = int(model_config.get("timesnet_width", 64))
     times_top_k = int(model_config.get("timesnet_top_k", 3))

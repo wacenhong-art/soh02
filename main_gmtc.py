@@ -1,67 +1,98 @@
-import os
-import sys
+"""Single command-line entry point for the strict G-MTC experiments."""
+from __future__ import annotations
+
+import argparse
 import subprocess
-import pandas as pd
+import sys
+from pathlib import Path
 
-# ===================== 路径配置 =====================
-ROOT_PATH = "./"
-OUTPUT_PATH = os.path.join(ROOT_PATH, "output")
-os.makedirs(OUTPUT_PATH, exist_ok=True)
 
-def run_step(step_name, script_path):
-    """执行单步脚本并打印状态"""
-    print("\n" + "="*70)
-    print(f"执行步骤：{step_name}")
-    print("="*70)
-    result = subprocess.run([sys.executable, "-X", "utf8", script_path], check=False)
-    if result.returncode != 0:
-        print(f"[FAIL] {step_name} 执行失败，错误码：{result.returncode}")
-        sys.exit(result.returncode)
-    print(f"[OK] {step_name} 执行完成")
+ROOT = Path(__file__).resolve().parent
 
-def main():
-    # Innovation edition defaults: lightweight backbone and validation-selected
-    # Trend-only transfer, which avoids the observed Seasonal negative transfer.
-    os.environ.setdefault("TIMESNET_VARIANT", "light")
-    os.environ.setdefault("TRANSFER_PRETRAIN", "1")
-    os.environ.setdefault("TRANSFER_COMPONENTS", "Trend")
-    print("=" * 70)
-    print("轻量G-MTC + OSELM 锂电池SOH估计创新框架")
-    print("Paper: Data-augmented SOH estimation for lithium-ion batteries")
-    print("=" * 70)
 
-    # 按论文的分阶段流程执行，避免误用上一次运行遗留的中间结果。
-    run_step("健康特征提取", "scripts/01_extract_hf.py")
-    run_step("SCF-GAN数据增强", "scripts/02_scf_gan.py")
-    run_step("STL分解与分量预测", "scripts/03_time_series.py")
-    run_step("注意力Bi-LSTM动态融合", "scripts/04_attention_fusion.py")
-    run_step("OSELM在线残差校正与消融", "scripts/05_oselm_correction.py")
-    run_step("因果多速率与可靠性评估", "scripts/06_causal_multirate_reliability.py")
-    run_step("创新模块消融汇总", "scripts/07_innovation_summary.py")
+def run_script(script: str, *args: object) -> None:
+    command = [sys.executable, "-X", "utf8", str(ROOT / script), *map(str, args)]
+    subprocess.run(command, cwd=ROOT, check=True)
 
-    # 步骤2：基线模型对比
-    run_step("基线模型训练与对比", "baseline_compare.py")
 
-    # 步骤3：结果可视化绘图
-    run_step("论文图表绘制", "plot_results.py")
-    run_step("创新结果图表与人工核验输出", "plot_innovation_results.py")
+def run_paper(args: argparse.Namespace) -> None:
+    """Run only the paper-core chain; engineering add-ons are excluded."""
+    for title, script in [
+        ("健康特征提取", "scripts/01_extract_hf.py"),
+        ("SCF-GAN训练增强", "scripts/02_scf_gan.py"),
+        ("STL分解与分量预测", "scripts/03_time_series.py"),
+        ("注意力Bi-LSTM融合", "scripts/04_attention_fusion.py"),
+    ]:
+        print(f"\n{'=' * 68}\n{title}\n{'=' * 68}")
+        run_script(script)
+    if not args.skip_baselines:
+        run_script("baseline_compare.py")
+    run_script("scripts/05_paper_compliance.py")
 
-    # 严格验收：未达到论文指标或仍有逻辑偏差时主流程必须失败。
-    run_step("论文一致性验收", "scripts/05_paper_compliance.py")
 
-    # 最终汇总
-    print("\n" + "="*70)
-    print("完整流程执行完毕！")
-    print("="*70)
-    print("输出文件清单：")
-    print(f"  1. G-MTC预测结果：{os.path.join(OUTPUT_PATH, 'gmtc_pred_result.csv')}")
-    print(f"  2. 分量预测结果：{os.path.join(OUTPUT_PATH, 'component_pred_result.csv')}")
-    print(f"  3. 基线对比表格：{os.path.join(OUTPUT_PATH, 'baseline_compare_result.csv')}")
-    print(f"  4. 论文图表文件夹：{os.path.join(OUTPUT_PATH, 'figures')}")
-    print(f"  5. 创新消融结果：{os.path.join(OUTPUT_PATH, 'innovation_ablation_result.csv')}")
-    print(f"  6. 可靠性结果：{os.path.join(OUTPUT_PATH, 'causal_reliability_result.csv')}")
-    print(f"  7. 完整消融表：{os.path.join(OUTPUT_PATH, 'innovation_complete_ablation.csv')}")
-    print("="*70)
+def run_physics(args: argparse.Namespace) -> None:
+    command = [
+        "--batteries", args.batteries,
+        "--modes", args.modes,
+        "--lambda-phy", args.lambda_phy,
+        "--epochs", args.epochs,
+        "--patience", args.patience,
+        "--seed", args.seed,
+        "--evaluation-split", args.evaluation_split,
+        "--output-dir", args.output_dir,
+    ]
+    run_script("scripts/08_physics_trend_ablation.py", *command)
+
+
+def run_grid(args: argparse.Namespace) -> None:
+    command: list[object] = [args.grid_command]
+    if args.grid_command != "build":
+        command += ["--stage", args.stage, "--epochs", args.epochs,
+                    "--patience", args.patience, "--seed", args.seed]
+        if args.grid_command == "one":
+            command += ["--config", args.config]
+        elif args.max_configs is not None:
+            command += ["--max-configs", args.max_configs]
+    run_script("scripts/09_paper_grid.py", *command)
+
+
+def parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(description="严格、无测试泄漏的 G-MTC 实验入口")
+    sub = p.add_subparsers(dest="command", required=True)
+
+    paper = sub.add_parser("paper", help="运行论文核心链")
+    paper.add_argument("--skip-baselines", action="store_true")
+    paper.set_defaults(func=run_paper)
+
+    physics = sub.add_parser("physics", help="运行 Trend-only 物理约束消融")
+    physics.add_argument("--batteries", default="B0007,B0018")
+    physics.add_argument("--modes", default="none,monotonic,smooth,both")
+    physics.add_argument("--lambda-phy", type=float, default=.01, choices=[0, .001, .01, .1])
+    physics.add_argument("--epochs", type=int, default=250)
+    physics.add_argument("--patience", type=int, default=30)
+    physics.add_argument("--seed", type=int, default=42)
+    physics.add_argument("--evaluation-split", choices=["validation", "test"], default="validation")
+    physics.add_argument("--output-dir", default=str(ROOT / "output" / "physics_trend"))
+    physics.set_defaults(func=run_physics)
+
+    grid = sub.add_parser("grid", help="构建或运行预注册论文参数网格")
+    grid.add_argument("grid_command", choices=["build", "one", "stage"])
+    grid.add_argument("--stage", default="A_representation", choices=["A_representation"])
+    grid.add_argument("--config")
+    grid.add_argument("--epochs", type=int, default=20)
+    grid.add_argument("--patience", type=int, default=8)
+    grid.add_argument("--seed", type=int, default=42)
+    grid.add_argument("--max-configs", type=int)
+    grid.set_defaults(func=run_grid)
+    return p
+
+
+def main() -> None:
+    args = parser().parse_args()
+    if args.command == "grid" and args.grid_command == "one" and not args.config:
+        raise SystemExit("grid one 必须提供 --config")
+    args.func(args)
+
 
 if __name__ == "__main__":
     main()
